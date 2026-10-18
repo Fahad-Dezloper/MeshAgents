@@ -65,3 +65,30 @@ features degrade to no-ops with a visible notice.
 ## Out of scope
 General long-term memory recall, a hosted multi-user service, any UI beyond FalkorDB Browser
 until Phase 6.
+
+## Code symbol graph (added after the first evaluation rounds)
+
+File-level warnings cannot say *what* a change breaks. A second layer in the same FalkorDB graph indexes
+Python definitions and call sites:
+
+```
+(:Artifact)-[:DEFINES]->(:Symbol {id: "path::Class.method", name, qual, kind, sig, path, line, refs})
+(:Symbol)-[:CALLS]->(:Symbol)
+```
+
+- **Extraction** (`capture/symbols.py`): standard-library `ast`, no dependencies. Top-level functions,
+  classes and methods become symbols; module-level code is attributed to a `<module>` symbol.
+- **Resolution**: calls are linked only when the target can be named statically, from `import`,
+  `from x import y`, relative imports, module aliases, same-file top-level names and `self.method()`.
+  A call on an object of unknown type is not linked. Unresolved calls produce no edge rather than a
+  guessed one.
+- **Writes** (`core/codegraph.py`): batched `UNWIND` statements. A file's symbols are replaced as a unit;
+  outgoing edges are created for callees that exist, and incoming edges are created for callers that
+  already reference the new symbols (a `refs` property holds each symbol's resolved targets), so indexing
+  order does not matter. Files are re-indexed when their content hash changes. The first session indexes
+  the project within a 2-second budget; the rest follows incrementally.
+- **Query**: after an edit, `breaking_changes(old, new)` decides whether a public call shape changed
+  incompatibly (removed or renamed, positional parameters changed, a new required parameter, a removed
+  keyword-only parameter or `*args`/`**kwargs`). Only then does one traversal return the callers in other
+  files, joined with the live leases on those files. Compatible changes produce no message.
+- **Limits**: Python only; no type inference; return-shape changes are not detected.
