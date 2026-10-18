@@ -13,7 +13,7 @@ import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 from baton.capture import derive, symbols, transcript
-from baton.core import codegraph, decisions, sessions
+from baton.core import cochange, codegraph, decisions, sessions
 from baton.core.paths import normalize_path
 from baton.core.safety import scrub
 from baton.core.tasks import clip_goal
@@ -121,6 +121,12 @@ def on_session_start(store: Store, payload: Dict[str, Any], cfg: Config, now: Op
             codegraph.index_project(store, project_dir_from(payload))
         except Exception:
             pass  # the code graph is an extra; never let it affect the session
+    if cfg.cochange:
+        try:
+            cochange.index_project(store, project_dir_from(payload), budget_s=2.0)
+            cochange.refresh_hot(store)
+        except Exception:
+            pass  # git history is an extra too
     text = sessions.briefing(store, actor, now=now)
     return context_output("SessionStart", text) if text else None
 
@@ -191,6 +197,26 @@ def related_paths(project: str, rel: str) -> List[str]:
     return out
 
 
+def _cochange_hint(store: Store, actor: str, project: str, paths: List[str], cfg: Config) -> Optional[str]:
+    """One line naming files that usually change with the file about to be edited (once per session and file)."""
+    if not cfg.cochange:
+        return None
+    try:
+        touched = cochange.touched_paths(store, sessions.session_task_id(actor))
+        lines: List[str] = []
+        for p in paths[:2]:
+            sig = "cc|%s" % p
+            if _already_warned(actor, sig):
+                continue
+            line = cochange.hint_for(store, project, p, already_touched=touched | set(paths))
+            _remember_warned(actor, sig)  # also when empty: the answer will not change within a session
+            if line:
+                lines.append(line)
+        return "[baton] " + " ".join(lines) if lines else None
+    except Exception:
+        return None
+
+
 def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     project = project_dir_from(payload)
     paths = edit_paths(payload, project)
@@ -212,13 +238,14 @@ def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optiona
     same_file_ids = {d["id"] for d in res["decisions"]}  # type: ignore[union-attr]
     nearby = [c for c in nearby if c["id"] not in same_file_ids][:5]
 
+    hint = _cochange_hint(store, actor, project, paths, cfg)
     if not res["has_conflicts"] and not nearby:
-        return None
+        return context_output("PreToolUse", hint) if hint else None
     ids = sorted([d["id"] for d in res["decisions"]] + [t["id"] for t in res["leases"]]  # type: ignore[union-attr]
                  + [c["id"] + "@" + str(int(c["at"])) for c in nearby])
     signature = "%s|%s" % (",".join(paths), ",".join(ids))
     if cfg.policy == "warn" and _already_warned(actor, signature):
-        return None
+        return context_output("PreToolUse", hint) if hint else None
     _remember_warned(actor, signature)
 
     parts: List[str] = []
@@ -237,6 +264,11 @@ def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optiona
                      "edit agrees with these (names, signatures, config keys):\n%s"
                      % (", ".join(paths), "\n".join(lines)))
     text = "\n\n".join(parts)
+
+    if res["has_conflicts"] and cfg.policy in ("ask", "deny"):
+        pass  # the hint never turns a call into a prompt or a block; it is added to plain context only
+    elif hint:
+        text += "\n\n" + hint
 
     if res["has_conflicts"] and cfg.policy in ("ask", "deny"):
         return {"hookSpecificOutput": {
