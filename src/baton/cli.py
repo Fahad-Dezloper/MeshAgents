@@ -1,4 +1,4 @@
-"""`baton` console command: `baton doctor` runs the install check, `baton gc` prunes old data, anything else is a hook event."""
+"""`meshagents` console command: `meshagents doctor` runs the install check, `meshagents gc` prunes old data, anything else is a hook event."""
 
 from __future__ import annotations
 

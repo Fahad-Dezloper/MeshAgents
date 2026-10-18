@@ -144,5 +144,5 @@ def impact(store: Store, actor: str, path: str, breaking: List[Dict[str, str]],
         who = " (session %s is working in it now)" % working[p] if p in working else ""
         lines.append("- %s%s: %s" % (p, who, "; ".join(sorted(set(uses))[:3])))
     changed = "; ".join("%s: %s" % (b["name"], b["reason"]) for b in breaking[:3])
-    return ("[baton] You changed how %s is called (%s). Callers elsewhere that may now break:\n%s\n"
+    return ("[MeshAgents] You changed how %s is called (%s). Callers elsewhere that may now break:\n%s\n"
             "Update them or keep the old call shape working." % (path, changed, "\n".join(lines)))

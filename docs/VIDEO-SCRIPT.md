@@ -21,7 +21,7 @@ docs/RESULTS.md.
 
 | Time | Show | Say |
 |---|---|---|
-| 0:00-0:15 | Title text: "baton: a shared graph for parallel Claude Code sessions. Track 2." | "When several coding sessions work on one repository, they collide silently. One changes a function signature, another builds on the old one, and the next day's session starts from nothing. baton keeps a FalkorDB graph of who is working on what and what was decided." |
+| 0:00-0:15 | Title text: "MeshAgents: a shared graph for parallel Claude Code sessions. Track 2." | "When several coding sessions work on one repository, they collide silently. One changes a function signature, another builds on the old one, and the next day's session starts from nothing. MeshAgents keeps a FalkorDB graph of who is working on what and what was decided." |
 | 0:15-0:30 | Terminal: `.venv/bin/python demo/run_demo.py` (press enter; output scrolls). | "This script drives the same hook handlers the plugin uses, with the same payloads. No model, no API key. Two sessions start on the same checkout." |
 | 0:30-0:55 | Output section 2: session A edits `shop/db.py`; the "recorded without anyone typing a command" list. | "Session A changes a function signature and brings in sqlite. Nobody typed a command. The decisions were derived from the edit itself, and stored in the graph." |
 | 0:55-1:20 | Output sections 3 and 4: warnings to session B. | "Session B is about to edit a different file that imports db. The hook asked the graph for recent changes to files it imports, and told B. If B goes for the same file as A, it gets a collision notice with A's lease." |

@@ -1,4 +1,4 @@
-# Evaluation image: FalkorDB server + Claude Code + baton + the pristine "shop" fixture.
+# Evaluation image: FalkorDB server + Claude Code + MeshAgents + the pristine "shop" fixture.
 # Build from the repository root:
 #   docker build -t baton-eval:latest -f evals/harbor/image/Dockerfile .
 FROM falkordb/falkordb:v4.22.1
@@ -13,7 +13,7 @@ RUN curl -fsSL https://downloads.claude.ai/claude-code-releases/bootstrap.sh | b
  && ln -sf /root/.local/bin/claude /usr/local/bin/claude \
  && claude --version
 
-# baton: library, MCP server and the host plugin.
+# MeshAgents (internal name baton): library, MCP server and the host plugin.
 COPY src /opt/baton/src
 COPY plugin /opt/baton/plugin
 RUN python3 -m venv /opt/baton/.venv \

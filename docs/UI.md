@@ -1,20 +1,20 @@
 # Dashboard and command line
 
-Hooks are baton's main product. These are the human-facing views of the same graph.
+Hooks are the main product of MeshAgents. These are the human-facing views of the same graph.
 
 ```sh
-baton ui [--port 7777] [--workspace NAME]   # prints http://127.0.0.1:7777, opens nothing
-baton status [--json]                       # live sessions, leases, shared files, latest decisions
-baton why <decision-or-finding-id>          # what it was based on, and what depends on it
-baton retract <id> --reason "..." [--yes]   # asks first; prints the decisions that became tainted
-baton handoff                               # latest handoff briefing
-baton impact <path>                         # callers of a file's public symbols, and who is in those files
-baton together <path>                       # files that usually change with it (git history)
-baton brief                                 # exactly what a new session would be told now, with a token estimate
-baton rules                                 # captured rules with ids (retract a wrong one: baton retract <id>)
+meshagents ui [--port 7777] [--workspace NAME]   # prints http://127.0.0.1:7777, opens nothing
+meshagents status [--json]                       # live sessions, leases, shared files, latest decisions
+meshagents why <decision-or-finding-id>          # what it was based on, and what depends on it
+meshagents retract <id> --reason "..." [--yes]   # asks first; prints the decisions that became tainted
+meshagents handoff                               # latest handoff briefing
+meshagents impact <path>                         # callers of a file's public symbols, and who is in those files
+meshagents together <path>                       # files that usually change with it (git history)
+meshagents brief                                 # exactly what a new session would be told now, with a token estimate
+meshagents rules                                 # captured rules with ids (retract a wrong one: meshagents retract <id>)
 ```
 
-All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WORKSPACE` override it).
+All commands pick the workspace the way the hooks do (`--workspace` or `MESHAGENTS_WORKSPACE` override it).
 
 ![Board, dark](img/ui-board-dark.png)
 
@@ -72,5 +72,5 @@ Below 860 px the sidebar becomes a tab row and the columns stack.
 - Decision and finding text comes from other sessions and is untrusted. The API returns it as raw JSON; the page
   builds the DOM with `textContent` only (a test fails if `innerHTML` appears), and a CSP forbids external loads.
 - Responses are capped (60 code files, 100 decisions, 60 tasks, 80 files, 150 graph nodes, 1.5 MB body).
-- `baton handoff` records that a human imported the handoff, like any other session would.
+- `meshagents handoff` records that a human imported the handoff, like any other session would.
 - No dependencies, no CDN, no build step: one HTML file in `src/baton/ui/static/`.

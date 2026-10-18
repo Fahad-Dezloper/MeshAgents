@@ -28,7 +28,7 @@ harbor run -p <task-or-dataset-dir> -a claude-code -m <model> -n <concurrent> -k
 `-n` concurrent trials, `-k` attempts per task, `-o` jobs dir, `-e` sandbox, `--ak k=v` agent
 settings. Config is a `JobConfig` (`--print-config`, `<job>/config.json`).
 
-## Fit with baton's evaluation
+## Fit with the MeshAgents evaluation
 | Need | Harbor | Notes |
 |---|---|---|
 | Reproducible sandbox per trial | Yes | Docker image per task |
@@ -44,9 +44,9 @@ Multi-step tasks run steps in sequence, so they do not reproduce a race.
 
 ## Proposed use (Phase 5.1 decision)
 One trial = one **orchestrator** session inside the sandbox that launches N headless worker
-sessions against the shared checkout (with or without baton enabled), waits for them, then the
+sessions against the shared checkout (with or without MeshAgents enabled), waits for them, then the
 verifier runs `evals/clash/check.py` and writes `reward.json`. Harbor then supplies repetition,
-parallelism, isolation and reporting; baton's harness supplies the overlap.
+parallelism, isolation and reporting; the MeshAgents harness supplies the overlap.
 
 Arms = two agent configurations of the same task (`baseline`, `plugin`).
 
@@ -67,7 +67,7 @@ differs.
 - A custom agent loads by import path; subclassing Harbor's own Claude Code agent reuses its
   install, subscription-token auth (`CLAUDE_FORCE_OAUTH=1` + `CLAUDE_CODE_OAUTH_TOKEN`) and
   settings handling. Only `run` is overridden to start N concurrent sessions.
-- One image holds FalkorDB, Claude Code, baton and the fixture; each trial starts a fresh container.
+- One image holds FalkorDB, Claude Code, MeshAgents and the fixture; each trial starts a fresh container.
 - No-model infrastructure checks pass: the verifier scores an untouched checkout as not clash-free
   (2 failed checks), and in the plugin arm the second of two simulated sessions receives the
   collision warning inside the sandbox with FalkorDB running in-container.
@@ -78,4 +78,4 @@ differs.
 ## Not yet verified
 - Real concurrent sessions with the subscription token inside the sandbox (needs the token).
 - Rate-limit behaviour for 4-6 simultaneous sessions on a Max plan.
-- Whether `mcp__plugin_baton_baton__*` tool permissions behave as expected headless.
+- Whether `mcp__plugin_meshagents_meshagents__*` tool permissions behave as expected headless.

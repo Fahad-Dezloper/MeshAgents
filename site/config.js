@@ -1,14 +1,14 @@
 /* One-line rename: change `name` (and, if you like, `cli` and `dir`). Everything on the page reads from here.
    The repo URL is a PLACEHOLDER until the final one is decided. Empty video/blog links render as "coming soon". */
 window.CONFIG = {
-  name: "baton",
-  tagline: "A shared notebook for AI coding helpers working on the same project.",
-  repo: "https://github.com/Fahad-Dezloper/Baton",
+  name: "MeshAgents",
+  tagline: "A shared memory for AI coding helpers.",
+  repo: "https://github.com/Fahad-Dezloper/Baton", // PLACEHOLDER: the repo will be renamed; update this URL then
   repoIsPlaceholder: true,
   video: "",
   blog: "",
-  cli: "baton",
-  dir: "baton",
+  cli: "meshagents",
+  dir: "meshagents",
   /* install commands, copied from the README; {repo} {cli} {dir} are filled in */
   install: [
     { label: "1. Get it and run the demo (no model, no API key; needs Docker and Python 3.10+)",

@@ -444,7 +444,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
             "files": [_s(p, 300) for p in packet["artifacts"]][:20], "decisions": len(packet["decisions"]),
             "text": _s(packet["text"], 3000)}
     if parts:
-        text = "[baton] Coordination context for this repository:\n" + "\n".join(parts)
+        text = "[MeshAgents] Coordination context for this repository:\n" + "\n".join(parts)
         if len(text) > ss.BRIEFING_MAX_CHARS:
             text = text[: ss.BRIEFING_MAX_CHARS - 14] + "\n… truncated"
         out.update(empty=False, text=text, chars=len(text), tokens=_tokens(len(text)))

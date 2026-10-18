@@ -1,4 +1,4 @@
-# How baton uses FalkorDB, and why it matters
+# How MeshAgents uses FalkorDB, and why it matters
 
 For readers who want the detail. The short version is in the [README](../README.md). Everything here is checked against the code in
 `src/baton/`; where a number comes from a measurement, the source is named. FalkorDB runs as `falkordb/falkordb:v4.22.1` (pinned in
@@ -99,7 +99,7 @@ From the repository's recorded results:
 | First co-change index of 800 commits | 0.3 s (flask), 0.16 s (fastapi); re-run with no new commits 12-16 ms | [RESULTS-COCHANGE.md](RESULTS-COCHANGE.md) |
 | Co-change hint query | p50 0.3 ms, p95 0.4 ms | same |
 | PageRank refresh / cached check | 2-4 ms / 0.2-0.5 ms (flask, fastapi) | same |
-| Whole `baton pre-tool` process | about 140-200 ms with or without the hint, difference within noise; most of it is starting Python | same, [SPIKES.md](SPIKES.md) |
+| Whole `meshagents pre-tool` process | about 140-200 ms with or without the hint, difference within noise; most of it is starting Python | same, [SPIKES.md](SPIKES.md) |
 
 Measured again on 2026-10-18 for this page, in a throwaway graph (`baton_dd_...`, dropped afterwards) on local FalkorDB 4.22.1: 2000
 decisions in a single `BASED_ON` chain, 200 files, 50 tasks, the repository's own queries, one client:
@@ -122,10 +122,10 @@ not scale claims.
   matter here. Writes to different graphs overlap (2.1x with 8 threads on 8 graphs vs 1.2x on one graph, in a heavy-write spike), so one graph
   per workspace is also the way to scale out. Reads run in parallel; do not read this as "readers are never blocked": one read stalled
   230-630 ms during a very large write in the spike, cause not investigated.
-- **No multi-query transactions.** A single query is atomic; several are not. baton keeps anything that must be atomic in one query (the claim),
+- **No multi-query transactions.** A single query is atomic; several are not. MeshAgents keeps anything that must be atomic in one query (the claim),
   and makes multi-step writes safe to repeat: `MERGE`, idempotent ids, a handoff that rewrites its `INCLUDES` edges. A crash between two queries can
   still leave a partial write, for example a decision without its `ABOUT` edge.
-- **Graph algorithms look at the whole graph.** `algo.pageRank` is not per-file, so baton caches the result and recomputes on a timer. It is not benchmarked; only the mechanism is tested
+- **Graph algorithms look at the whole graph.** `algo.pageRank` is not per-file, so MeshAgents caches the result and recomputes on a timer. It is not benchmarked; only the mechanism is tested
   with a synthetic call graph.
 - **Cypher quirks we hit or avoided.** Parameters are not accepted in `LIMIT`/`SKIP` (integers are inlined after validation).
   `shortestPath` works only inside `WITH`/`RETURN`. Details: [research/03-falkordb-capabilities.md](research/03-falkordb-capabilities.md).
@@ -136,7 +136,7 @@ not scale claims.
 ## 6. What we deliberately do not use
 
 - **Vector search.** FalkorDB supports it (we tested vector KNN at about 0.34 ms and a hybrid vector-to-graph query in 2.4 ms in the research notes). We do not use it because it needs an
-  embedding for every note, and baton's hooks run with no API key and no model call. Everything baton stores is deterministic, so the same edit
+  embedding for every note, and the MeshAgents hooks run with no API key and no model call. Everything MeshAgents stores is deterministic, so the same edit
   gives the same record. The cost is real: there is no "find notes that mean the same thing" lookup, and rule capture is keyword-based.
 - **Full-text index**, **graph copy for what-if retraction**, **GRAPH.PROFILE panel**, **unique constraints**, other algorithms (community detection, betweenness). Tested in
   the research notes, not shipped. Duplicate-artifact protection currently relies on `MERGE`, not a constraint.
@@ -170,4 +170,4 @@ Open http://localhost:3000 (FalkorDB Browser), choose `baton_demo`, and paste qu
 8. which files call into `shop/db.py`, and how often
 9. symbols nothing calls
 
-`baton ui` shows the same graph in a read-only dashboard. To profile any query yourself: `GRAPH.PROFILE baton_demo "<query>"` from `redis-cli`.
+`meshagents ui` shows the same graph in a read-only dashboard. To profile any query yourself: `GRAPH.PROFILE baton_demo "<query>"` from `redis-cli`.

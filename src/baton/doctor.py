@@ -1,4 +1,4 @@
-"""`baton doctor`: check that a fresh install can actually run, with a fix for each failure.
+"""`meshagents doctor`: check that a fresh install can actually run, with a fix for each failure.
 
 Read-only apart from one throwaway graph (named baton_doctor_<random>) that is deleted afterwards.
 """
@@ -28,7 +28,7 @@ def check_python(version=None) -> Result:
     v = tuple(version or sys.version_info[:3])
     ok = v[:2] >= MIN_PYTHON
     return (ok, "Python %s" % ".".join(str(x) for x in v[:3]),
-            "" if ok else "baton needs Python %d.%d+. Install a newer python3 and recreate the venv." % MIN_PYTHON)
+            "" if ok else "MeshAgents needs Python %d.%d+. Install a newer python3 and recreate the venv." % MIN_PYTHON)
 
 
 def check_package(name: str, pip_name: Optional[str] = None) -> Result:
@@ -37,7 +37,7 @@ def check_package(name: str, pip_name: Optional[str] = None) -> Result:
         return (True, "package '%s' importable" % name, "")
     except Exception as e:
         return (False, "package '%s' not importable (%s)" % (name, type(e).__name__),
-                "pip install -e .   (inside the repo, using the venv you will run baton with)"
+                "pip install -e .   (inside the repo, using the venv you will run meshagents with)"
                 if name == "baton" else "pip install %s" % (pip_name or name))
 
 
@@ -104,7 +104,7 @@ def run_checks(plugin_dir: Optional[str] = None) -> List[Result]:
         results.append(check_roundtrip())
     pdir = plugin_dir or find_plugin_dir()
     results.append(check_plugin_files(pdir) if pdir else
-                   (False, "plugin directory not found", "Run `baton doctor` from the repo root"))
+                   (False, "plugin directory not found", "Run `meshagents doctor` from the repo root"))
     return results
 
 
@@ -117,7 +117,7 @@ def format_results(results: List[Result]) -> Tuple[str, bool]:
     good = all(r[0] for r in results)
     lines.append("")
     lines.append("All checks passed. Start Claude Code with: claude --plugin-dir %s" % "<repo>/plugin"
-                 if good else "Some checks failed; fix the items above and run `baton doctor` again.")
+                 if good else "Some checks failed; fix the items above and run `meshagents doctor` again.")
     return "\n".join(lines), good
 
 

@@ -1,11 +1,11 @@
 """Harbor agents for the collision evaluation.
 
 One trial = one orchestrator that launches N Claude Code sessions *at the same time* against one
-shared checkout inside the sandbox. The only difference between the two arms is whether the baton
+shared checkout inside the sandbox. The only difference between the two arms is whether the MeshAgents
 plugin is loaded for those sessions:
 
     baton_eval.agent:BatonClashBaseline    no coordination
-    baton_eval.agent:BatonClashPlugin      baton hooks enabled (hooks-only product)
+    baton_eval.agent:BatonClashPlugin      MeshAgents hooks enabled (hooks-only product)
     baton_eval.agent:BatonClashNotes       no plugin; the prompt asks for a HANDOFF.md notes file (relay mode)
 
 Run with:  PYTHONPATH=evals/harbor/agent harbor run -p <task> -a baton_eval.agent:BatonClashPlugin ...
@@ -44,7 +44,7 @@ WRAPPER = (
     "anything unexpected or conflicting you saw in the repo (or 'none').\n\nTICKET:\n{ticket}"
 )
 
-# The "notes" arm: the best-case manual alternative to baton. No plugin, but each session is asked to
+# The "notes" arm: the best-case manual alternative to MeshAgents. No plugin, but each session is asked to
 # keep a HANDOFF.md at the repo root. The first session writes it, later sessions read it first.
 NOTES_FIRST = (
     "\n\nBefore finishing, update HANDOFF.md at the repo root (create it if missing) with what you did, "
@@ -138,7 +138,7 @@ class _ClashAgent(ClaudeCode):
                  "--allowedTools", "Write", "Edit", "MultiEdit", "Bash"]
         if plugin:
             if self.MCP:
-                flags += ["mcp__plugin_baton_baton__*"]
+                flags += ["mcp__plugin_meshagents_meshagents__*"]
             flags += ["--plugin-dir", PLUGIN_DIR_FULL if self.MCP else PLUGIN_DIR]
         flag_str = " ".join(shlex.quote(f) for f in flags)
         out = f"{logs}/worker-{key}.json"

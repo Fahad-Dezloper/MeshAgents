@@ -82,7 +82,7 @@ class UiCase(unittest.TestCase):
     def test_routes(self):
         code, body, hdr = self.get("/")
         self.assertEqual(code, 200)
-        self.assertIn(b"baton", body)
+        self.assertIn(b"MeshAgents", body)
         self.assertIn("default-src 'none'", hdr["Content-Security-Policy"])
         code, body, _ = self.get("/api/state")
         self.assertEqual(code, 200)

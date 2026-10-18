@@ -217,7 +217,7 @@ def briefing(store: Store, actor: str, now: Optional[float] = None,
 
     if not parts:
         return ""
-    text = "[baton] Coordination context for this repository:\n" + "\n".join(parts)
+    text = "[MeshAgents] Coordination context for this repository:\n" + "\n".join(parts)
     if len(text) > max_chars:
         text = text[: max_chars - 14] + "\n… truncated"
     return text

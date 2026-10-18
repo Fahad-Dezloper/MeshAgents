@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "baton"
 version = "0.0.1"
-description = "Shared task, decision and handoff graph for parallel coding sessions, backed by FalkorDB"
+description = "MeshAgents: shared task, decision and handoff graph for parallel coding sessions, backed by FalkorDB"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,7 +17,9 @@ dependencies = [
 dev = ["pytest"]
 
 [project.scripts]
+meshagents = "baton.cli:main"
 baton = "baton.cli:main"
+meshagents-mcp = "baton.mcp_server.server:main"
 baton-mcp = "baton.mcp_server.server:main"
 
 [tool.setuptools.packages.find]

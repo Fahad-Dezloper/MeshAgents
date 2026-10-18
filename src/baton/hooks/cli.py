@@ -1,7 +1,7 @@
-"""Hook entry point called by the host:  baton <event>   (JSON on stdin, JSON on stdout).
+"""Hook entry point called by the host:  meshagents <event>   (JSON on stdin, JSON on stdout).
 
 Policy: fail open. Any error, missing store or disabled config produces no output and exit 0, so
-baton can never block or break the host session.
+MeshAgents can never block or break the host session.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _debug(record: dict) -> None:
 def main(argv: Optional[List[str]] = None, stdin=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if not argv or argv[0] not in SUBCOMMANDS:
-        print("usage: baton {%s}" % "|".join(SUBCOMMANDS), file=sys.stderr)
+        print("usage: meshagents {%s}" % "|".join(SUBCOMMANDS), file=sys.stderr)
         return 2
     event = argv[0]
     stream = stdin if stdin is not None else sys.stdin

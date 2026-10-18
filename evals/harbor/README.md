@@ -1,4 +1,4 @@
-# Harbor evaluation: baseline vs baton
+# Harbor evaluation: baseline vs MeshAgents
 
 Each task is one "clash level": several Claude Code sessions start at the same moment against
 one shared checkout in a sandbox, then a verifier checks whether the combined result collides.
@@ -7,7 +7,7 @@ Only the agent class differs between arms.
 | Arm | Agent | What is enabled |
 |---|---|---|
 | baseline | `baton_eval.agent:BatonClashBaseline` | nothing (no coordination) |
-| plugin | `baton_eval.agent:BatonClashPlugin` | baton hooks + tools |
+| plugin | `baton_eval.agent:BatonClashPlugin` | MeshAgents hooks + tools |
 
 ## One-time setup
 ```sh

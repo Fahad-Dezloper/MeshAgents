@@ -1,4 +1,4 @@
-"""`baton ui`: a read-only local dashboard. Standard library only, GET only, no write endpoints."""
+"""`meshagents ui`: a read-only local dashboard. Standard library only, GET only, no write endpoints."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ class App:
 
 def make_handler(app: App, allowed_hosts: set):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "baton-ui"
+        server_version = "meshagents-ui"
         protocol_version = "HTTP/1.1"
 
         def log_message(self, *a):  # quiet
@@ -141,7 +141,7 @@ def make_server(app: App, host: str = "127.0.0.1", port: int = 7777) -> Threadin
 def main(argv: Optional[List[str]] = None) -> int:
     from baton.service import default_workspace
 
-    p = argparse.ArgumentParser(prog="baton ui", description="Read-only dashboard for a baton workspace.")
+    p = argparse.ArgumentParser(prog="meshagents ui", description="Read-only dashboard for a MeshAgents workspace.")
     p.add_argument("--port", type=int, default=7777)
     p.add_argument("--host", default="127.0.0.1", help="bind address (default 127.0.0.1; keep it local)")
     p.add_argument("--workspace", default=None)
@@ -150,9 +150,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     try:
         srv = make_server(App(ws), a.host, a.port)
     except OSError as e:
-        print("baton ui: cannot listen on %s:%d (%s)" % (a.host, a.port, e.strerror or e), file=sys.stderr)
+        print("meshagents ui: cannot listen on %s:%d (%s)" % (a.host, a.port, e.strerror or e), file=sys.stderr)
         return 1
-    print("baton ui: workspace %s\n  http://%s:%d   (read-only, Ctrl-C to stop)" % (ws, a.host, a.port))
+    print("meshagents ui: workspace %s\n  http://%s:%d   (read-only, Ctrl-C to stop)" % (ws, a.host, a.port))
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

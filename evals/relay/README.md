@@ -20,7 +20,7 @@ analyze.py    statistics for a finished run (Fisher, permutation, bootstrap); --
 | R5 | nothing (negative control) | unrelated change |
 | R6 | one refund rule (cap at order total, round half-even, never negative) hidden as the 10th of 20 pasted conventions | add shop.api.refund_order |
 
-Arms: baseline (no plugin), plugin (baton hooks), notes (no plugin; prompts ask for a HANDOFF.md).
+Arms: baseline (no plugin), plugin (MeshAgents hooks), notes (no plugin; prompts ask for a HANDOFF.md).
 
 ## Run
 ```sh

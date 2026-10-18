@@ -4,9 +4,9 @@ Items marked **ASSUMED** are verified in Phase 0 before anything depends on them
 
 ## Shape
 ```
-host session(s) ──hooks──▶ baton CLI ─┐
-        │                              ├──▶ baton core ──▶ FalkorDB (one graph per workspace)
-        └──MCP tools──▶ baton server ──┘
+host session(s) ──hooks──▶ meshagents CLI ─┐
+        │                              ├──▶ MeshAgents core ──▶ FalkorDB (one graph per workspace)
+        └──MCP tools──▶ MeshAgents server ──┘
 ```
 Core is a plain library. The CLI (hooks) and the MCP server are thin shells over it.
 
@@ -39,9 +39,9 @@ Leases live on the `Task` node (`owner`, `lease_until`, `version`) so a claim is
 - **Isolation**: workspace → graph name, chosen from authenticated context, never from model output.
 
 ## Identity and workspace (Phase 2)
-- **Workspace** comes from `BATON_WORKSPACE`, else a hash of the server's working directory. It is
+- **Workspace** comes from `MESHAGENTS_WORKSPACE`, else a hash of the server's working directory. It is
   never a tool argument, so a model cannot address another workspace.
-- **Actor** is `BATON_ACTOR` or a random per-process id. Each host session launches its own server
+- **Actor** is `MESHAGENTS_ACTOR` or a random per-process id. Each host session launches its own server
   process, so sessions are distinct actors. Subagents share their parent's process; an optional
   `actor` label qualifies the id (`parent/label`) and is display-only.
 - Tool results are plain dicts: `ok`, or `ok:false` with `error` (`not_found`, `invalid`) or

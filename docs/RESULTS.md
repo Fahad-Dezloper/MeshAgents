@@ -1,5 +1,7 @@
 # Evaluation results, round 1 (plugin v1)
 
+Product name: the project was called baton during these experiments; it is now MeshAgents.
+
 Run: 2026-10-15, 16:35-17:17 IST. Harbor 0.24.0, local Docker sandboxes, one fresh container per
 trial. 5 levels x 2 arms x 5 attempts = 50 trials, 150 sessions, cheap model, subscription token.
 All sessions of a trial start at the same moment on one shared checkout. Scorer: `evals/clash/check.py`.

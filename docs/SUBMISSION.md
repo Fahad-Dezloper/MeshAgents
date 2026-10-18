@@ -40,7 +40,7 @@ summarising fetch tool, so wording is paraphrase. Anything not stated on those p
 | 6 | Track(s) | Track 2 (see below) | form |
 | 7 | Project information (form fields) | Text proposed below | form |
 | 8 | Blog post | Draft ready; USER publishes it (dev.to, Medium, personal site) and picks the link | docs/BLOG.md |
-| 9 | LICENSE | Done (MIT, holder placeholder "baton authors", lead to confirm) | LICENSE |
+| 9 | LICENSE | Done (MIT, holder placeholder "MeshAgents authors", lead to confirm) | LICENSE |
 | 10 | AI-assistance disclosure | In README; repeat in form and blog | README, blog |
 
 ## What the user must do personally
@@ -55,7 +55,7 @@ summarising fetch tool, so wording is paraphrase. Anything not stated on those p
 
 ## Proposed form text
 
-**Project name:** baton
+**Project name:** MeshAgents
 
 **One-line pitch:** A FalkorDB graph that parallel Claude Code sessions share, so they see each
 other's work, decisions and handoffs before they collide.
@@ -64,7 +64,7 @@ other's work, decisions and handoffs before they collide.
 
 **Long description:**
 Parallel coding sessions on one repository collide silently: one changes a function signature while
-another builds on the old one, and the next session starts from nothing. baton is a Claude Code
+another builds on the old one, and the next session starts from nothing. MeshAgents is a Claude Code
 plugin (hooks plus an MCP server) that keeps one FalkorDB graph per workspace holding sessions as
 leased Tasks, the files they touch (Artifacts), the Decisions they make, the Findings those rest on,
 and Handoffs. Before an edit, a hook queries the graph for live leases on the file and for recent
@@ -113,5 +113,5 @@ architecture. Evaluation numbers come from runs recorded in the repository.
   score manipulation.
 - **Evaluation honesty:** not a stated rule, but overstating results is the easiest way to lose
   credibility. Keep claims within docs/RESULTS.md.
-- **License:** FalkorDB server is SSPLv1; baton only talks to it over the network and ships no
-  FalkorDB code, so MIT for baton is fine. Not a rule on the pages; noted from FalkorDB's published license.
+- **License:** FalkorDB server is SSPLv1; MeshAgents only talks to it over the network and ships no
+  FalkorDB code, so MIT for MeshAgents is fine. Not a rule on the pages; noted from FalkorDB's published license.

@@ -23,9 +23,9 @@ def redact(text: str) -> str:
 
 
 def scrub(text: object, limit: int = 0) -> str:
-    """Redact secrets, collapse whitespace (no forged lines), neutralise our own marker, clip."""
+    """Redact secrets, collapse whitespace (no forged lines), neutralise our own marker ([MeshAgents], and the old [baton]), clip."""
     out = " ".join(redact(str(text)).split())
-    out = out.replace("[baton]", "(baton)")
+    out = re.sub(r"\[(?:baton|meshagents)\]", lambda m: "(" + m.group(0)[1:-1] + ")", out, flags=re.I)
     if limit and len(out) > limit:
         out = out[: limit - 3] + "..."
     return out

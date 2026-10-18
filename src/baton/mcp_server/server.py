@@ -1,7 +1,7 @@
 """MCP tool surface (Phase 2). Thin shell over baton.service.Service.
 
 Run:  python -m baton.mcp_server.server        (stdio)
-Env:  BATON_WORKSPACE   workspace id (default: derived from the working directory)
+Env:  MESHAGENTS_WORKSPACE (or BATON_WORKSPACE)   workspace id (default: derived from the working directory)
       BATON_ACTOR       caller id for this process (default: random per process)
       BATON_FALKORDB_HOST / BATON_FALKORDB_PORT
 
@@ -36,7 +36,7 @@ TOOL_NAMES = (
 )
 
 INSTRUCTIONS = (
-    "baton coordinates parallel sessions working in one repository. Before editing files that "
+    "MeshAgents coordinates parallel sessions working in one repository. Before editing files that "
     "others may be touching, call check_conflicts. Claim a task before working on it and complete "
     "it when done. Record choices that affect others with post_decision (set `kind` for renames, "
     "config or interface changes). Results with degraded=true mean the coordination store is "
@@ -49,7 +49,7 @@ def build_server(service: Optional[Service] = None) -> MCPServer:
         ws = os.environ.get("BATON_WORKSPACE") or default_workspace()
         service = Service(Store(ws))
     svc = service
-    mcp = MCPServer("baton", instructions=INSTRUCTIONS)
+    mcp = MCPServer("meshagents", instructions=INSTRUCTIONS)
 
     @mcp.tool()
     def create_task(goal: str, depends_on: Optional[List[str]] = None,
@@ -125,7 +125,7 @@ def build_server(service: Optional[Service] = None) -> MCPServer:
 
 def main() -> None:
     server = build_server()
-    print("baton MCP server starting (stdio)", file=sys.stderr)
+    print("MeshAgents MCP server starting (stdio)", file=sys.stderr)
     server.run(transport="stdio")
 
 

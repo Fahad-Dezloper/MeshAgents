@@ -1,5 +1,6 @@
 {
-  "name": "baton",
+  "name": "meshagents",
+  "displayName": "MeshAgents",
   "version": "0.1.0",
-  "description": "Keeps parallel sessions from colliding: shared task, decision and handoff graph backed by FalkorDB."
+  "description": "MeshAgents: a shared memory for AI coding helpers. Keeps parallel sessions from colliding with a shared task, decision and handoff graph backed by FalkorDB."
 }

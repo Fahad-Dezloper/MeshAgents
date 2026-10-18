@@ -1,4 +1,4 @@
-"""Human-facing commands: `baton status | why | retract | handoff` (the hooks are the main product)."""
+"""Human-facing commands: `meshagents status | why | retract | handoff` (the hooks are the main product)."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def _store(args) -> Store:
 
 
 def _parser(prog: str, desc: str) -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="baton " + prog, description=desc)
+    p = argparse.ArgumentParser(prog="meshagents " + prog, description=desc)
     p.add_argument("--workspace", default=None, help="workspace id (default: like the hooks)")
     return p
 
@@ -64,10 +64,10 @@ def cmd_status(argv, out: Out) -> int:
         return 0 if st["connected"] else 1
     if not st["connected"]:
         out.p(out.c("31", "FalkorDB unreachable: ") + st["error"])
-        out.p("Start it with: docker compose up -d   (check with: baton doctor)")
+        out.p("Start it with: docker compose up -d   (check with: meshagents doctor)")
         return 1
     now, c = st["now"], st["counts"]
-    out.p(out.c("1", "baton") + " workspace %s: %d live session(s), %d open decision(s), %d tainted, %d handoff(s)"
+    out.p(out.c("1", "MeshAgents") + " workspace %s: %d live session(s), %d open decision(s), %d tainted, %d handoff(s)"
           % (st["workspace"], c["live_sessions"], c["open_decisions"], c["tainted"], c["handoffs"]))
     try:
         cc = state.code_state(_store(a), base=st)["counts"]
@@ -76,7 +76,7 @@ def cmd_status(argv, out: Out) -> int:
         pass
     sess = [s for s in st["sessions"] if s["is_session"]]
     if not sess and not st["decisions"]:
-        out.p("\nNothing recorded yet. Start a session with the plugin: claude --plugin-dir /path/to/baton/plugin")
+        out.p("\nNothing recorded yet. Start a session with the plugin: claude --plugin-dir /path/to/meshagents/plugin")
         return 0
     out.p("\n" + out.c("1", "Sessions"))
     out.p("  %-13s %-8s %-9s %-9s %s" % ("id", "state", "lease", "last edit", "goal / files"))
@@ -271,7 +271,7 @@ def cmd_brief(argv, out: Out) -> int:
 
 
 def cmd_rules(argv, out: Out) -> int:
-    p = _parser("rules", "Rules and facts captured from conversation (retract a wrong one with: baton retract <id>).")
+    p = _parser("rules", "Rules and facts captured from conversation (retract a wrong one with: meshagents retract <id>).")
     a = p.parse_args(argv)
     try:
         rows = state.rules_list(_store(a))

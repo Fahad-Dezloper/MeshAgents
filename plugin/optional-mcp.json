@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "baton": {
+    "meshagents": {
       "command": "${CLAUDE_PLUGIN_ROOT}/bin/baton-mcp",
       "args": []
     }

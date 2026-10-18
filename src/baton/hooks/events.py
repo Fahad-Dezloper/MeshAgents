@@ -146,7 +146,7 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
             shown = sessions.recent_rules(store, actor, t)  # already given at session start
             rel = rules.relevant(store, actor, prompt, t, exclude=shown, since=t - sessions.RULE_WINDOW)
             if rel:
-                extra = ("[baton] Rules stated earlier that look relevant to this request:\n"
+                extra = ("[MeshAgents] Rules stated earlier that look relevant to this request:\n"
                          + "\n".join("- %s" % scrub(x, 240) for x in rel))
     except Exception:
         pass  # rule capture is an extra; never let it affect the session
@@ -157,11 +157,11 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
         return context_output("UserPromptSubmit", extra) if extra else None
     names = ", ".join(sorted({str(d["owner"])[:8] for d in dups}))
     if sessions.designated_session(store, actor, dups):
-        text = ("[baton] Another live session (%s) received this same request. You started first, so "
+        text = ("[MeshAgents] Another live session (%s) received this same request. You started first, so "
                 "you are the one to carry it out; the other session has been told to stand down. "
                 "Proceed." % names)
     else:
-        text = ("[baton] Another live session (%s) received this same request and started first; it "
+        text = ("[MeshAgents] Another live session (%s) received this same request and started first; it "
                 "is already doing it. Do NOT implement it a second time. Reply that session %s is "
                 "handling it and stop, unless the user explicitly asked for a separate attempt."
                 % (names, names))
@@ -229,7 +229,7 @@ def _cochange_hint(store: Store, actor: str, project: str, paths: List[str], cfg
             _remember_warned(actor, sig)  # also when empty: the answer will not change within a session
             if line:
                 lines.append(line)
-        return "[baton] " + " ".join(lines) if lines else None
+        return "[MeshAgents] " + " ".join(lines) if lines else None
     except Exception:
         return None
 
@@ -267,7 +267,7 @@ def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optiona
 
     parts: List[str] = []
     if res["has_conflicts"]:
-        parts.append("[baton] Possible collision on %s:\n%s\n"
+        parts.append("[MeshAgents] Possible collision on %s:\n%s\n"
                      "Their work is in progress and yours still needs doing. If your task needs something in this "
                      "file (a function, a field), add it yourself; do not assume they will, and do not call "
                      "code that does not exist yet. Re-read the file right before editing and keep their "
@@ -277,7 +277,7 @@ def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optiona
     if nearby:
         lines = ["- %s changed %s (%s): %s" % (str(c["author"])[:8], c["path"], c["kind"],
                                                 scrub(c["text"], 220)) for c in nearby]
-        parts.append("[baton] Other sessions recently changed files related to %s. Make sure your "
+        parts.append("[MeshAgents] Other sessions recently changed files related to %s. Make sure your "
                      "edit agrees with these (names, signatures, config keys):\n%s"
                      % (", ".join(paths), "\n".join(lines)))
     text = "\n\n".join(parts)
@@ -386,7 +386,7 @@ def on_stop(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[fl
             files = sorted({p for o in ov for p in o["paths"]})
             who = "; ".join("%s (%s)" % (str(o["owner"])[:8], scrub(clip_goal(o["goal"], 90), 90)) for o in ov[:3])
             return {"decision": "block", "reason": (
-                "[baton] Before you finish: other sessions also edited files you edited (%s) while you "
+                "[MeshAgents] Before you finish: other sessions also edited files you edited (%s) while you "
                 "worked: %s. Re-read those files as they are now and run the project tests. Fix any "
                 "mismatch between your change and theirs (the same logic added twice, a changed "
                 "return shape or signature, a lost edit), then finish." % (", ".join(files[:6]), who))}

@@ -109,7 +109,7 @@ def main():
         print("  - %s (%s)" % (d["text"], d["id"]))
     print("why(%s): %s" % (d2["id"], [x["text"] for x in provenance.why(store, d2["id"])["findings"]]))
 
-    say("7. Code graph: session A changes a call shape, baton names the callers")
+    say("7. Code graph: session A changes a call shape, MeshAgents names the callers")
     print("indexed:", codegraph.index_project(store, project))
     fire("post-tool", B, **{"tool_name": "Edit", "tool_input": {"file_path": api_path, "old_string": "x", "new_string": "y"},
                             "tool_response": {"originalFile": open(api_path).read()}})

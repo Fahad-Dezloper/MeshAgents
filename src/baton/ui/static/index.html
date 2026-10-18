@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>baton</title>
+<title>MeshAgents</title>
 <style>
 :root{color-scheme:light;
 --bg:#fbfbfa;--side:#f4f4f2;--surface:#fff;--ink:#1f2023;--mute:#6f7480;--faint:#9aa0ab;--hair:#e8e8e5;--hover:#f0f0ed;--shadow:0 1px 2px rgba(20,20,30,.06),0 1px 1px rgba(20,20,30,.04);--shadow2:0 6px 20px rgba(20,20,30,.10);
@@ -147,7 +147,7 @@ svg text{font:12px ui-monospace,Menlo,monospace;fill:var(--ink)}
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><i class="dot" id="dot"></i><div>baton<small id="ws"></small></div></div>
+    <div class="brand"><i class="dot" id="dot"></i><div>MeshAgents<small id="ws"></small></div></div>
     <nav class="nav" id="nav" aria-label="Views"></nav>
     <div class="spacer"></div>
     <button class="theme" id="theme" type="button"></button>
@@ -482,7 +482,7 @@ function whyView(id) {
   box.appendChild(h("div", { "class": "mute", style: "margin-top:8px" }, "Based on " + w.upstream.length + " · " + plural(w.downstream.length, "decision") + " depend on it"));
   if (w.root.status === "open") box.appendChild(h("div", { "class": "preview", style: "margin-top:8px" },
     w.would_taint.length ? "If retracted, " + plural(w.would_taint.length, "decision") + " would be tainted: " + w.would_taint.map(function (d) { return clip(d.text, 50); }).join("; ") : "If retracted, nothing else would be affected.",
-    h("div", { "class": "mute" }, "Preview only. Retract from the terminal: baton retract " + w.root.id + " --reason \"...\"")));
+    h("div", { "class": "mute" }, "Preview only. Retract from the terminal: meshagents retract " + w.root.id + " --reason \"...\"")));
   return box;
 }
 function toggleWhy(id) {
@@ -627,7 +627,7 @@ function renderMemory() {
     return part("Rules and facts people stated", "The next session starts knowing this. They come from conversation, not from the code.",
       h("div", {}, M.rules.map(function (r) {
         return h("div", { "class": "rule" }, h("div", { "class": "rt" }, r.text),
-          h("div", { "class": "mute" }, "said in ", h("code", {}, r.author.slice(0, 12)), " · ", h("span", { "data-fmt": "ago", "data-ts": r.created_at || "" }, age(r.created_at)), " · wrong? ", h("code", {}, "baton retract " + r.id)));
+          h("div", { "class": "mute" }, "said in ", h("code", {}, r.author.slice(0, 12)), " · ", h("span", { "data-fmt": "ago", "data-ts": r.created_at || "" }, age(r.created_at)), " · wrong? ", h("code", {}, "meshagents retract " + r.id)));
       })));
   } });
   if (M.live.length) items.push({ key: "live", sig: JSON.stringify(M.live), build: function () {
@@ -686,8 +686,8 @@ function buildGraph(g) {
 function emptyState() {
   return h("div", { "class": "empty" },
     h("h2", { style: "color:var(--ink);margin:0 0 8px" }, S.connected ? "Nothing here yet" : "Waiting for the database"),
-    h("p", {}, "Start a session and baton fills this page by itself."),
-    h("pre", { "class": "mono" }, "docker compose up -d\n.venv/bin/pip install -e . && .venv/bin/baton doctor\nclaude --plugin-dir /path/to/baton/plugin"),
+    h("p", {}, "Start a session and MeshAgents fills this page by itself."),
+    h("pre", { "class": "mono" }, "docker compose up -d\n.venv/bin/pip install -e . && .venv/bin/meshagents doctor\nclaude --plugin-dir /path/to/meshagents/plugin"),
     h("p", { "class": "mute" }, "Or try the scripted demo: .venv/bin/python demo/run_demo.py"));
 }
 function ensureViews() {

@@ -1,4 +1,4 @@
-"""`baton gc [--days N] [--workspace W]`: drop finished sessions and old handoffs so a graph does not grow forever."""
+"""`meshagents gc [--days N] [--workspace W]`: drop finished sessions and old handoffs so a graph does not grow forever."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         elif a == "--workspace" and argv:
             ws = argv.pop(0)
         else:
-            print("usage: baton gc [--days N] [--workspace NAME]", file=sys.stderr)
+            print("usage: meshagents gc [--days N] [--workspace NAME]", file=sys.stderr)
             return 2
     from baton.graph.client import Store
     from baton.service import default_workspace

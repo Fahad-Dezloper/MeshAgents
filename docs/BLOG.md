@@ -4,7 +4,7 @@
 
 If you run two or three Claude Code sessions on one repository at the same time, they will step on each other. Not dramatically. Quietly. One session changes `get_order(order_id)` to take an extra flag. Another is writing an endpoint against the old signature. A third picks the same ticket as the first because both were pasted the same text. The next morning, a fresh session knows none of this.
 
-baton is my attempt at the smallest useful fix: a shared graph in FalkorDB that every session writes to and reads from, delivered through Claude Code hooks so nobody has to remember a command. This post covers what the graph holds, why it needs to be a graph, one example from the demo, and the part I think matters more than the tool: what happened when I tried to measure whether it helps.
+MeshAgents is my attempt at the smallest useful fix: a shared graph in FalkorDB that every session writes to and reads from, delivered through Claude Code hooks so nobody has to remember a command. This post covers what the graph holds, why it needs to be a graph, one example from the demo, and the part I think matters more than the tool: what happened when I tried to measure whether it helps.
 
 ## What the graph models
 

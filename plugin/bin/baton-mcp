@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Launcher for the baton MCP server (stdio). Same interpreter discovery as baton-hook.
+# Launcher for the MeshAgents MCP server (stdio). Same interpreter discovery as baton-hook (launcher file names kept).
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/../src"
 [ -d "$SRC/baton" ] && export PYTHONPATH="$SRC${PYTHONPATH:+:$PYTHONPATH}"
 
-# Interpreter discovery, in order: $BATON_PYTHON, the repo's .venv (made by the quickstart),
-# the interpreter named by the `baton` console script on PATH, then any python3/python that can
+# Interpreter discovery, in order: $MESHAGENTS_PYTHON (or $BATON_PYTHON), the repo's .venv (made by the quickstart),
+# the interpreter named by the `meshagents` console script (meshagents or baton) on PATH, then any python3/python that can
 # import baton and falkordb. Nothing to edit for the documented install.
 pick_python() {
   local c b
-  for c in "${BATON_PYTHON:-}" "$ROOT/../.venv/bin/python" "$ROOT/.venv/bin/python"; do
+  for c in "${MESHAGENTS_PYTHON:-${BATON_PYTHON:-}}" "$ROOT/../.venv/bin/python" "$ROOT/.venv/bin/python"; do
     [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; return 0; }
   done
-  b="$(command -v baton 2>/dev/null)" && [ -n "$b" ] && {
+  b="$(command -v meshagents 2>/dev/null || command -v baton 2>/dev/null)" && [ -n "$b" ] && {
     c="$(head -n1 "$b" 2>/dev/null | sed -n 's/^#!//p' | awk '{print $1}')"
     [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; return 0; }
   }
@@ -23,5 +23,5 @@ pick_python() {
   return 1
 }
 
-PY="$(pick_python)" || { echo "baton: no Python with baton installed. Run: python3 -m venv .venv && .venv/bin/pip install -e .  (or set BATON_PYTHON)" >&2; exit 1; }
+PY="$(pick_python)" || { echo "MeshAgents: no Python with the package installed. Run: python3 -m venv .venv && .venv/bin/pip install -e .  (or set MESHAGENTS_PYTHON)" >&2; exit 1; }
 exec "$PY" -B -m baton.mcp_server.server
