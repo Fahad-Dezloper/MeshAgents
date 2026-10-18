@@ -51,7 +51,35 @@ main{padding:32px 40px 64px;min-width:0}
 .view{margin-top:24px}
 [hidden]{display:none!important}
 /* board */
+.boardwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
 .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.colsub{display:block;font-weight:400;color:var(--faint);font-size:12.5px;line-height:1.3}
+.colhead .ct{display:flex;flex-direction:column;min-width:0}
+.feed{border-radius:16px;padding:12px;background:var(--surface);box-shadow:var(--shadow);position:sticky;top:16px}
+.feed h3{margin:0;padding:4px 6px 4px;font-size:14px;color:var(--mute);font-weight:550;display:flex;align-items:center;gap:8px}
+.feed h3 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.feedlist{display:flex;flex-direction:column;max-height:calc(100vh - 220px);overflow:auto}
+.fl{display:grid;grid-template-columns:10px minmax(0,1fr);gap:10px;padding:9px 6px;border-top:1px solid var(--hair);font-size:13.5px;line-height:1.35}
+.fl:first-child{border-top:0}
+.fl .fd{width:9px;height:9px;border-radius:50%;margin-top:5px;background:var(--faint)}
+.fl .ft{overflow-wrap:anywhere}
+.fl .fw{display:block;color:var(--faint);font-size:12px;margin-top:1px}
+.fl.in{animation:slidein .45s ease-out}
+@keyframes slidein{from{opacity:0;transform:translateY(-14px);background:var(--accentbg)}to{opacity:1;transform:none}}
+.k-collision .fd,.k-impact .fd{background:var(--bad)}.k-nearby .fd,.k-duplicate .fd{background:var(--c2)}
+.k-hint .fd{background:var(--warn)}.k-rule .fd{background:var(--c3)}.k-briefing .fd{background:var(--accent)}
+.k-start .fd,.k-task .fd,.k-work .fd{background:var(--c1)}.k-change .fd{background:var(--accent)}.k-finish .fd{background:var(--ok)}
+.told{color:var(--mute);font-size:13px}
+.badge.note{background:var(--accentbg);color:var(--accent)}
+.hname{font-size:13px;font-weight:650;color:var(--mute);letter-spacing:.01em}
+.task{margin:0;font-size:16px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.bigempty{max-width:620px;margin:56px auto;text-align:center;color:var(--mute)}
+.bigempty h2{font-size:28px;line-height:1.25;color:var(--ink);margin:0 0 12px;letter-spacing:-.02em}
+.bigempty pre{display:inline-block;text-align:left;background:var(--surface);border-radius:12px;padding:14px 20px;box-shadow:var(--shadow);color:var(--ink);font-size:14px;max-width:100%;overflow:auto}
+details.d{font-size:13px;color:var(--mute)}details.d summary{cursor:pointer;color:var(--accent);font-weight:550;padding:2px 0}
+.hu{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--hair)}
+.hu:first-of-type{border-top:0}
 .col{border-radius:16px;padding:12px;background:var(--c1bg)}
 .col.c2{background:var(--c2bg)}.col.c3{background:var(--c3bg)}
 .colhead{display:flex;align-items:center;gap:8px;padding:4px 6px 12px;font-size:14px;color:var(--mute);font-weight:550}
@@ -141,7 +169,9 @@ svg text{font:12px ui-monospace,Menlo,monospace;fill:var(--ink)}
  .spacer{display:none}.theme{margin-left:auto}
  main{padding:20px 16px 48px}.head h1{font-size:24px}
  .board,.two{grid-template-columns:minmax(0,1fr)}
+ .feedlist{max-height:none}
 }
+@media (max-width:1180px){.boardwrap{grid-template-columns:minmax(0,1fr)}.feed{position:static}.feedlist{max-height:340px}}
 </style>
 </head>
 <body>
@@ -166,7 +196,10 @@ svg text{font:12px ui-monospace,Menlo,monospace;fill:var(--ink)}
    createElement + textContent only. */
 var S = null, C = null, M = null, togetherCache = {}, togetherAsked = {}, S0 = 0, skew = 0, view = "board", panelId = null, panelSig = "", decFilter = "all",
     openWhy = {}, whyCache = {}, openChains = {}, codeSel = null, pendingPanel = null, VIEWS = {}, boardEls = null;
-var NAV = [["board", "Board"], ["memory", "Memory"], ["files", "Files"], ["decisions", "Decisions"], ["code", "Code"], ["graph", "Graph"]];
+var feedSeen = {}, feedInit = false;
+var TITLES = { memory: "What the next helper will be told" };
+var KIND = { interface: "function changed", storage: "storage changed", config: "setting changed", rename: "file moved", rule: "rule", note: "note", other: "note", finding: "source" };
+var NAV = [["board", "Board"], ["memory", "Next helper"], ["files", "Files"], ["decisions", "Decisions"], ["code", "Code"], ["graph", "Graph"]];
 var $ = function (id) { return document.getElementById(id); };
 
 function h(tag, attrs) {
@@ -201,7 +234,22 @@ function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + "
 function clip(t, n) { t = String(t); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
 function base(p) { return String(p).split("/").pop(); }
 function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
-function tag(text, cls) { return h("span", { "class": "tag " + (cls || text) }, text); }
+function kl(k) { return KIND[k] || k; }
+function tag(text, cls) { return h("span", { "class": "tag " + (cls || text) }, KIND[text] && !cls ? KIND[text] : text); }
+function rel(ts) {
+  var s = Math.max(0, Math.round(nowS() - ts));
+  return s < 5 ? "just now" : s < 60 ? s + " s ago" : s < 3600 ? Math.floor(s / 60) + " min ago" : s < 86400 ? Math.floor(s / 3600) + " h ago" : Math.floor(s / 86400) + " d ago";
+}
+function helperName(owner) {
+  var m = S && S.sessions.filter(function (x) { return x.owner === owner; })[0];
+  return m ? m.name : "A helper";
+}
+function nameByShort(sh) {
+  var m = S && S.sessions.filter(function (x) { return x.short === sh; })[0];
+  return m ? m.name : sh;
+}
+function noticesOf(s) { return ((S && S.notices) || []).filter(function (n) { return n.helper === s.owner && s.owner; }); }
+var WARN_KINDS = { collision: 1, nearby: 1, impact: 1, duplicate: 1, hint: 1 };
 function avatar(id) {
   var n = 0, i, t = String(id).replace(/^sess[-_]/, "");
   for (i = 0; i < t.length; i++) n = (n * 31 + t.charCodeAt(i)) % 360;
@@ -237,37 +285,42 @@ function liveByFile() {
 function risks(s) {
   var out = [];
   if (s.status !== "live") return out;
-  s.collides_with.forEach(function (c) { out.push({ level: "bad", text: "shares " + base(c.file) + " with " + c.with.join(", ") }); });
+  s.collides_with.forEach(function (c) { out.push({ level: "bad", kind: "clash", text: "Another helper is also in " + base(c.file) }); });
   ((C && C.impact) || []).forEach(function (it) {
     if (it.author !== s.owner || !it.callers.length) return;
-    var c = it.callers[0], files = {};
-    it.callers.forEach(function (x) { files[x.caller_file] = 1; });
-    var n = Object.keys(files).length;
-    out.push({ level: "bad", text: c.symbol + " change may break " + base(c.caller_file) + (n > 1 ? " +" + (n - 1) : "") });
+    out.push({ level: "bad", kind: "clash", text: "Changing this may break " + base(it.callers[0].caller_file) });
   });
   var seen = false;
   S.decisions.forEach(function (d) {
     if (d.status === "tainted" && !seen && (d.author === s.owner || d.files.some(function (f) { return s.files.indexOf(f) >= 0; }))) {
-      seen = true; out.push({ level: "warn", text: "builds on a retracted decision" });
+      seen = true; out.push({ level: "warn", kind: "taken", text: "Built on a note that was taken back" });
     }
   });
   return out;
+}
+function warned(s) { return noticesOf(s).some(function (n) { return WARN_KINDS[n.kind]; }); }
+function badgeOf(s) {
+  var rs = risks(s);
+  if (rs.length) return rs[0];
+  return warned(s) ? { level: "note", kind: "warned", text: "Was warned and adjusted" } : null;
 }
 function column(s) { return s.status === "live" ? (risks(s).length ? 1 : 0) : 2; }
 function boardSessions() { return S.sessions.filter(function (s) { return s.is_session || s.status === "live"; }); }
 function handoffOf(s) { return (S.handoffs || []).filter(function (h) { return h.created_by === s.owner; })[0]; }
 
 function headline() {
-  var live = 0, att = 0;
-  boardSessions().forEach(function (s) { if (s.status === "live") { live++; if (risks(s).length) att++; } });
-  var coll = S.counts.collisions, imp = C && C.impact ? C.impact.length : 0;
-  var parts = [];
-  if (live) parts.push(plural(live, "session") + " working"); else parts.push("No sessions working");
-  if (coll) parts.push(plural(coll, "collision risk"));
-  if (imp) parts.push(plural(imp, "change") + " may break callers");
-  if (S.counts.tainted) parts.push(S.counts.tainted + " tainted");
-  var bad = att > 0;
-  return { text: bad ? parts.join(" · ") : (live ? parts[0] + " · all clear" : "Nothing running · all clear"), bad: bad };
+  var live = 0, clash = 0, taken = 0;
+  boardSessions().forEach(function (x) {
+    if (x.status !== "live") return;
+    live++;
+    var rs = risks(x);
+    if (rs.some(function (r) { return r.kind === "clash"; })) clash++; else if (rs.length) taken++;
+  });
+  if (!live) return { text: "All clear. No helpers working right now", bad: false };
+  var t = plural(live, "helper") + " working";
+  if (clash) t += ", " + clash + (clash === 1 ? " may clash" : " may clash");
+  if (taken) t += ", " + taken + " built on a note that was taken back";
+  return { text: clash || taken ? t : t + ". All clear", bad: clash + taken > 0 };
 }
 
 /* ---------- chrome ---------- */
@@ -297,10 +350,10 @@ function renderChrome() {
   ml.hidden = !show;
   if (show) {
     ml.textContent = "";
-    ml.appendChild(document.createTextNode("The next new session starts knowing " + [M.rules.length ? plural(M.rules.length, "rule") : "", M.decisions.length ? plural(M.decisions.length, "decision") : "", M.handoff ? "the last handoff" : ""].filter(Boolean).join(", ") + " (about " + M.tokens + " tokens). "));
-    ml.appendChild(h("button", { type: "button", onclick: function () { go("memory"); } }, "See exactly what"));
+    ml.appendChild(document.createTextNode("The next helper will already know " + [M.rules.length ? plural(M.rules.length, "rule") : "", M.decisions.length ? plural(M.decisions.length, "recent change") : "", M.handoff ? "where the last helper stopped" : ""].filter(Boolean).join(", ") + " (about " + M.words + " words of notes). "));
+    ml.appendChild(h("button", { type: "button", onclick: function () { go("memory"); } }, "See what"));
   }
-  $("pagetitle").textContent = (NAV.filter(function (n) { return n[0] === view; })[0] || NAV[0])[1];
+  $("pagetitle").textContent = TITLES[view] || (NAV.filter(function (n) { return n[0] === view; })[0] || NAV[0])[1];
 }
 function go(v) {
   view = v; location.hash = v === "board" ? "" : v;
@@ -309,37 +362,60 @@ function go(v) {
 }
 
 /* ---------- board ---------- */
+var COLS = [["Working now", "", "Helpers busy right now"], ["Needs a look", " c2", "Something may clash"], ["Finished", " c3", "Done; their notes are saved for the next helper"]];
 function buildBoard() {
-  var cols = [["Working", ""], ["Needs attention", " c2"], ["Handed off", " c3"]].map(function (c) {
+  var cols = COLS.map(function (c) {
     var cnt = h("span", { "class": "cnt" }), body = h("div", { "class": "cards" }), hint = h("div", { "class": "hint" });
-    return { cnt: cnt, body: body, hint: hint, el: h("section", { "class": "col" + c[1] }, h("div", { "class": "colhead" }, h("i", { "class": "dot" }), c[0], cnt), body, hint) };
+    return { cnt: cnt, body: body, hint: hint, el: h("section", { "class": "col" + c[1] }, h("div", { "class": "colhead" }, h("i", { "class": "dot" }), h("div", { "class": "ct" }, c[0], h("span", { "class": "colsub" }, c[2])), cnt), body, hint) };
   });
-  return { cols: cols, el: h("div", { "class": "board" }, cols.map(function (c) { return c.el; })) };
+  var grid = h("div", { "class": "board" }, cols.map(function (c) { return c.el; }));
+  var feedList = h("div", { "class": "feedlist" }), feedHint = h("div", { "class": "hint" }, "Nothing yet. Lines appear here as helpers work.");
+  var feed = h("aside", { "class": "feed", "aria-label": "Live feed" }, h("h3", {}, h("i", { "class": "pulse" }), "Live feed"), feedList, feedHint);
+  var empty = h("div", { "class": "bigempty", hidden: "" },
+    h("h2", {}, "Waiting for the first helper."), h("p", {}, "Start Claude Code in your project and give it a task."),
+    h("pre", { "class": "mono" }, "claude --plugin-dir /path/to/meshagents/plugin"));
+  var wrap = h("div", { "class": "boardwrap" }, grid, feed);
+  return { cols: cols, feedList: feedList, feedHint: feedHint, wrap: wrap, empty: empty, el: h("div", { "class": "view" }, empty, wrap) };
 }
-var HINTS = ["Nothing running. Start a session and it appears here.", "Nothing needs attention.", "No finished sessions yet."];
+var HINTS = ["No one is working right now.", "Nothing to worry about.", "No one has finished yet."];
 function sessionSig(s) {
-  return JSON.stringify([s.goal, s.status, s.files, s.last_edit_path, s.collides_with, risks(s), s.last_edit_at, s.created_at, !!handoffOf(s)]);
+  return JSON.stringify([s.name, s.task, s.has_goal, s.status, s.files.length, s.last_edit_path, s.last_edit_at, s.created_at, badgeOf(s), noticesOf(s).length]);
 }
 function buildCard(s) {
-  var rs = risks(s), chips = s.files.slice(0, 2).map(function (f) {
-    var hot = s.collides_with.some(function (c) { return c.file === f; });
-    return h("code", { "class": "chip" + (hot ? " hot" : ""), title: f }, base(f));
-  });
-  if (s.file_count > 2) chips.push(h("span", { "class": "chip" }, "+" + (s.file_count - 2)));
+  var bd = badgeOf(s), nt = noticesOf(s).length;
   var ts = s.last_edit_at || s.created_at;
-  var dot = h("i", { "class": "dot" }), txt = h("span", { "data-fmt": s.status === "live" ? "act" : "end", "data-ts": ts || "", "data-path": s.last_edit_path ? base(s.last_edit_path) : "", "data-st": s.status });
+  var dot = h("i", { "class": "dot" }), txt = h("span", { "data-fmt": "act", "data-ts": s.last_edit_at || "", "data-path": s.last_edit_path ? base(s.last_edit_path) : "", "data-st": s.status });
   return h("button", { "class": "card", type: "button", onclick: function () { openPanel(s.id); } },
-    h("h3", { "class": "title" }, s.goal),
-    chips.length ? h("div", { "class": "chips" }, chips) : null,
-    rs.slice(0, 2).map(function (r) { return h("div", { "class": "badge " + r.level }, r.text); }),
-    rs.length > 2 ? h("div", { "class": "mute" }, "+" + (rs.length - 2) + " more") : null,
-    h("div", { "class": "foot" }, h("div", { "class": "status" }, dot, txt), h("span", { "class": "when" })));
+    h("div", { "class": "hname" }, s.name),
+    h("p", { "class": "task" }, s.task),
+    s.last_edit_path ? h("div", { "class": "chips" }, h("code", { "class": "chip", title: s.last_edit_path }, base(s.last_edit_path))) : null,
+    bd ? h("div", { "class": "badge " + bd.level }, bd.text) : null,
+    nt ? h("div", { "class": "told" }, "Told " + plural(nt, "heads-up")) : null,
+    h("div", { "class": "foot" }, h("div", { "class": "status" }, dot, txt)));
+}
+function feedLine(e) {
+  return h("div", { "class": "fl k-" + e.kind + (feedInit ? " in" : "") }, h("i", { "class": "fd" }),
+    h("div", { "class": "ft" }, e.text, h("span", { "class": "fw", "data-fmt": "rel", "data-ts": e.at }, rel(e.at))));
+}
+function renderFeed(b) {
+  var feed = S.feed || [];
+  b.feedHint.hidden = feed.length > 0;
+  sync(b.feedList, feed.map(function (e) {
+    var key = e.at + "|" + e.kind + "|" + e.text;
+    return { key: key, sig: e.text, build: function () { var el = feedLine(e); feedSeen[key] = 1; return el; } };
+  }));
+  feedInit = true;
 }
 function renderBoard(root) {
   var b = VIEWS.board;
   var groups = [[], [], []];
-  boardSessions().forEach(function (s) { groups[column(s)].push(s); });
-  groups[0].sort(function (a, b) { return (b.last_edit_at || b.created_at || 0) - (a.last_edit_at || a.created_at || 0); });
+  var all = boardSessions();
+  b.empty.hidden = all.length > 0;
+  b.wrap.hidden = all.length === 0;
+  all.forEach(function (s) { groups[column(s)].push(s); });
+  groups[0].sort(function (a, b) { return (a.helper_n || 0) - (b.helper_n || 0); });
+  groups[1].sort(function (a, b) { return (a.helper_n || 0) - (b.helper_n || 0); });
+  groups[2].sort(function (a, b) { return (a.helper_n || 0) - (b.helper_n || 0); });
   groups.forEach(function (g, i) {
     var col = b.cols[i];
     col.cnt.textContent = g.length;
@@ -347,6 +423,7 @@ function renderBoard(root) {
     col.hint.hidden = g.length > 0;
     sync(col.body, g.map(function (s) { return { key: s.id, sig: sessionSig(s), build: function () { return buildCard(s); } }; }));
   });
+  renderFeed(b);
   tick();
 }
 
@@ -370,48 +447,60 @@ function decIndex() {
   S.findings.forEach(function (f) { ix[f.id] = { kind: "finding", d: f }; });
   return ix;
 }
+function noticeBlock(n) {
+  return h("div", { "class": "hu" },
+    h("div", { "class": "fl k-" + n.kind, style: "padding:0;border:0" }, h("i", { "class": "fd" }), h("div", { "class": "ft" }, n.summary, h("span", { "class": "fw" }, rel(n.at || 0)))),
+    n.files.length ? h("div", { "class": "chips" }, n.files.map(function (f) { return h("code", { "class": "chip" }, base(f)); })) : null,
+    n.detail ? h("details", { "class": "d" }, h("summary", {}, "show the exact message"), h("div", { "class": "pre" }, n.detail)) : null);
+}
 function renderPanel(fresh) {
   if (panelId === null || !S) return;
   var s = S.sessions.filter(function (x) { return x.id === panelId; })[0];
   var p = $("panel");
   if (!s) { closePanel(); return; }
   var mine = S.decisions.filter(function (d) { return d.author === s.owner && s.owner; });
-  var sig = JSON.stringify([s, mine, risks(s), C && C.impact, S.files.map(function (f) { return f.sessions.length; })]);
+  var nts = noticesOf(s);
+  var sig = JSON.stringify([s, mine, risks(s), nts, C && C.impact, S.files.map(function (f) { return f.sessions.length; })]);
   if (!fresh && sig === panelSig) return;
   panelSig = sig;
   var top = p.scrollTop, ix = decIndex(), rs = risks(s), ho = handoffOf(s);
   var others = {};
-  S.files.forEach(function (f) { if (s.files.indexOf(f.path) >= 0) f.sessions.forEach(function (o) { if (o.short !== s.short) (others[o.short] = others[o.short] || []).push(f.path); }); });
+  S.files.forEach(function (f) { if (s.files.indexOf(f.path) >= 0) f.sessions.forEach(function (o) { if (o.short !== s.short) (others[o.name || o.short] = others[o.name || o.short] || []).push(f.path); }); });
   var imp = ((C && C.impact) || []).filter(function (it) { return it.author === s.owner; });
   var ts = s.last_edit_at || s.created_at;
   p.textContent = "";
-  p.appendChild(h("button", { "class": "pclose", type: "button", "aria-label": "Close", onclick: closePanel }, "×"));
-  p.appendChild(h("div", { "class": "metaline" }, avatar(s.short), h("code", {}, s.short), tag(s.status === "live" ? "live" : s.status === "ended" ? "handed off" : s.status, s.status),
-    s.status === "live" ? h("span", { "data-until": s.lease_until }, "lease " + mmss(s.lease_until - nowS())) : null,
+  p.appendChild(h("button", { "class": "pclose", type: "button", "aria-label": "Close", onclick: closePanel }, "\u00d7"));
+  p.appendChild(h("div", { "class": "metaline" }, tag(s.status === "live" ? "working now" : "finished", s.status === "live" ? "live" : "ended"),
     h("span", {}, ts ? "last activity " + age(ts) : "")));
-  p.appendChild(h("h2", {}, s.goal));
-  if (rs.length) { p.appendChild(h("div", { "class": "sub" }, "Needs attention")); rs.forEach(function (r) { p.appendChild(h("div", { "class": "badge " + r.level, style: "margin-bottom:8px" }, r.text)); }); }
+  p.appendChild(h("h2", {}, s.name));
+  p.appendChild(h("p", { "class": "task", style: "margin-bottom:8px" }, s.has_goal ? s.goal : "Waiting for its first task"));
+  if (rs.length) { p.appendChild(h("div", { "class": "sub" }, "Needs a look")); rs.forEach(function (r) { p.appendChild(h("div", { "class": "badge " + r.level, style: "margin-bottom:8px" }, r.text)); }); }
+  p.appendChild(h("div", { "class": "sub" }, "Told " + plural(nts.length, "heads-up")));
+  if (!nts.length) p.appendChild(h("div", { "class": "mute" }, "Nothing so far."));
+  nts.forEach(function (n) { p.appendChild(noticeBlock(n)); });
   p.appendChild(h("div", { "class": "sub" }, "Files (" + s.file_count + ")"));
   p.appendChild(h("div", { "class": "chips" }, s.files.length ? s.files.map(function (f) { return h("code", { "class": "chip" + (s.collides_with.some(function (c) { return c.file === f; }) ? " hot" : "") }, f); }) : h("span", { "class": "mute" }, "No edits yet.")));
   if (Object.keys(others).length) {
-    p.appendChild(h("div", { "class": "sub" }, "Others touching these files"));
-    Object.keys(others).forEach(function (o) { p.appendChild(h("div", { "class": "metaline", style: "margin-bottom:6px" }, avatar(o), h("code", {}, o), "in", others[o].map(function (f) { return h("code", { "class": "chip" }, base(f)); }))); });
+    p.appendChild(h("div", { "class": "sub" }, "Other helpers in these files"));
+    Object.keys(others).forEach(function (o) { p.appendChild(h("div", { "class": "metaline", style: "margin-bottom:6px" }, o, "in", others[o].map(function (f) { return h("code", { "class": "chip" }, base(f)); }))); });
   }
   if (imp.length) {
-    p.appendChild(h("div", { "class": "sub" }, "Impact of its changes"));
+    p.appendChild(h("div", { "class": "sub" }, "Code that could break"));
     imp.forEach(function (it) { p.appendChild(impactBlock(it, true)); });
   }
-  p.appendChild(h("div", { "class": "sub" }, "Decisions recorded (" + mine.length + ")"));
+  p.appendChild(h("div", { "class": "sub" }, "Changes it made (" + mine.length + ")"));
   if (!mine.length) p.appendChild(h("div", { "class": "mute" }, "None yet."));
   mine.forEach(function (d) {
     var open = !!openChains["p" + d.id];
     p.appendChild(h("div", { "class": "row " + d.status, style: "margin-bottom:8px" },
-      h("div", { "class": "line" }, tag(d.kind), tag(d.status), h("span", { "class": "mute" }, age(d.created_at))),
+      h("div", { "class": "line" }, tag(d.kind), d.status !== "open" ? tag(d.status === "tainted" ? "built on a taken-back note" : d.status, d.status) : null, h("span", { "class": "mute" }, age(d.created_at))),
       h("div", { "class": "txt" }, d.text),
       d.based_on.length ? h("button", { "class": "link", type: "button", onclick: function () { openChains["p" + d.id] = !open; renderPanel(true); } }, (open ? "Hide" : "Show") + " what it is based on (" + d.based_on.length + ")") : null,
       open ? d.based_on.map(function (b) { return chainView(b, ix, {}, 0); }) : null));
   });
-  if (ho) { p.appendChild(h("div", { "class": "sub" }, "Handoff")); p.appendChild(h("div", { "class": "pre" }, ho.summary || ho.note || "(empty)")); }
+  if (ho) { p.appendChild(h("div", { "class": "sub" }, "Notes saved for the next helper")); p.appendChild(h("div", { "class": "pre" }, ho.summary || ho.note || "(empty)")); }
+  p.appendChild(h("div", { "class": "sub" }, "Technical details"));
+  p.appendChild(h("div", { "class": "metaline" }, h("code", {}, s.short), s.status === "live" ? h("span", { "data-until": s.lease_until }, "lease " + mmss(s.lease_until - nowS())) : null));
   p.appendChild(h("div", { "class": "mute", style: "margin-top:24px" }, "Esc to close"));
   p.classList.add("on"); $("scrim").classList.add("on"); p.setAttribute("aria-hidden", "false");
   if (fresh) { p.scrollTop = top; var cb = p.querySelector(".pclose"); if (cb && !p.contains(document.activeElement)) cb.focus(); } else p.scrollTop = top;
@@ -421,11 +510,11 @@ function impactBlock(it, compact) {
   var groups = {};
   it.callers.forEach(function (c) { (groups[c.caller_file] = groups[c.caller_file] || { who: c.being_edited_by, uses: [] }).uses.push(c.caller + " calls " + c.symbol); });
   return h("div", { "class": "row", style: compact ? "margin-bottom:8px" : "" },
-    compact ? null : h("div", { "class": "line" }, tag("interface"), h("span", { "class": "mute" }, it.author.slice(0, 12) + " · " + age(it.created_at)), it.affected_live.length ? tag("live sessions affected", "bad") : null),
+    compact ? null : h("div", { "class": "line" }, tag("function changed", "interface"), h("span", { "class": "mute" }, helperName(it.author) + " · " + age(it.created_at)), it.affected_live.length ? tag("a helper is working there", "bad") : null),
     h("div", { "class": compact ? "mute" : "txt" }, it.text),
     Object.keys(groups).map(function (f) {
       var g = groups[f];
-      return h("div", { "class": "chain" }, h("code", { "class": "chip" + (g.who.length ? " hot" : "") }, f), " ", g.who.length ? tag("being edited by " + g.who.join(", "), "bad") : null,
+      return h("div", { "class": "chain" }, h("code", { "class": "chip" + (g.who.length ? " hot" : "") }, f), " ", g.who.length ? tag("in use by " + g.who.map(nameByShort).join(", "), "bad") : null,
         h("div", { "class": "mute" }, g.uses.slice(0, 4).join("; ")));
     }));
 }
@@ -438,8 +527,8 @@ function renderFiles(root) {
     return { key: f.path, sig: JSON.stringify(f), build: function () {
       var open = function () { codeSel = f.path; go("code"); };
       return h("div", { "class": "row clickable", role: "button", tabindex: "0", title: "Show what usually changes with this file", onclick: open, onkeydown: function (e) { if (e.key === "Enter") open(); } },
-        h("div", { "class": "line" }, h("code", { "class": "mono" }, f.path), f.collision ? tag("shared by live sessions", "bad") : null, h("span", { "class": "when mute", "data-fmt": "ago", "data-ts": f.last_edit_at || "" }, age(f.last_edit_at))),
-        h("div", { "class": "line" }, f.sessions.map(function (x) { return h("span", { "class": "line", style: "gap:6px;margin-right:8px" }, avatar(x.short), h("span", { "class": "mute" }, x.short)); })));
+        h("div", { "class": "line" }, h("code", { "class": "mono" }, f.path), f.collision ? tag("two helpers here", "bad") : null, h("span", { "class": "when mute", "data-fmt": "ago", "data-ts": f.last_edit_at || "" }, age(f.last_edit_at))),
+        h("div", { "class": "line" }, f.sessions.map(function (x) { return h("span", { "class": "line", style: "gap:6px;margin-right:8px" }, avatar(x.short), h("span", { "class": "mute", title: x.short }, x.name || x.short)); })));
     } };
   }));
 }
@@ -506,7 +595,7 @@ function renderDecisions() {
     var d = x.d, id = d.id, open = !!openWhy[id], chainOpen = !!openChains[id];
     return { key: id, sig: JSON.stringify([d, open, chainOpen, open ? whyCache[id] : 0]), build: function () {
       return h("div", { "class": "row " + d.status },
-        h("div", { "class": "line" }, tag(x.t === "f" ? "finding" : d.kind), tag(d.status), h("span", { "class": "mute" }, (d.author ? d.author.slice(0, 12) + " · " : "")), h("span", { "class": "mute", "data-fmt": "ago", "data-ts": d.created_at || "" }, age(d.created_at))),
+        h("div", { "class": "line" }, tag(x.t === "f" ? "finding" : d.kind), tag(d.status), h("span", { "class": "mute" }, (d.author ? helperName(d.author) + " · " : "")), h("span", { "class": "mute", "data-fmt": "ago", "data-ts": d.created_at || "" }, age(d.created_at))),
         h("div", { "class": "txt" }, d.text),
         x.t === "f" ? h("div", { "class": "mute" }, "source: " + d.source) : null,
         x.t === "d" && d.files.length ? h("div", { "class": "chips" }, d.files.map(function (f) { return h("code", { "class": "chip" }, f); })) : null,
@@ -610,45 +699,48 @@ function buildTogether(path, info) {
 function part(title, why, body) {
   return h("section", { "class": "part" }, h("h3", {}, title), h("p", { "class": "why" }, why), body);
 }
+function sizeWord(w) { return w < 150 ? "small" : w < 450 ? "medium" : "large"; }
 function renderMemory() {
   var box = VIEWS.memory.box;
   if (!M) { sync(box, [{ key: "wait", sig: "w", build: function () { return h("div", { "class": "mute" }, "loading…"); } }]); return; }
   if (M.empty) {
     sync(box, [{ key: "empty", sig: "e", build: function () {
-      return h("div", { "class": "part" }, h("h3", {}, "Nothing yet"), h("p", { "class": "why" }, "After a session finishes, its notes appear here."),
-        h("div", { "class": "mute" }, "A new session would start with no extra context. Rules people state in a prompt (\"never use sqlite here\"), decisions and the last handoff are what it would be told."));
+      return h("div", { "class": "part" }, h("h3", {}, "Nothing yet"), h("p", { "class": "why" }, "After a helper finishes, its notes appear here."),
+        h("div", { "class": "mute" }, "A new helper would start with no extra notes. Rules you type in a task (\"never use sqlite here\"), what changed and where the last helper stopped are what it would be told."));
     } }]);
     return;
   }
-  var items = [{ key: "top", sig: M.tokens + ":" + M.chars, build: function () {
-    return h("div", { "class": "memtop" }, h("span", { "class": "big" }, "about " + M.tokens + " tokens"), h("span", { "class": "mute" }, M.chars + " characters, injected once when a new session starts"));
+  var items = [{ key: "top", sig: M.words + ":" + M.chars, build: function () {
+    return h("div", { "class": "memtop" }, h("span", { "class": "big" }, "about " + M.words + " words of notes (" + sizeWord(M.words) + ")"), h("span", { "class": "mute" }, "handed over once, when a new helper starts"));
   } }];
   if (M.rules.length) items.push({ key: "rules", sig: JSON.stringify(M.rules), build: function () {
-    return part("Rules and facts people stated", "The next session starts knowing this. They come from conversation, not from the code.",
+    return part("Rules you told earlier", "The next helper starts knowing these. They come from what people said, not from the code.",
       h("div", {}, M.rules.map(function (r) {
         return h("div", { "class": "rule" }, h("div", { "class": "rt" }, r.text),
-          h("div", { "class": "mute" }, "said in ", h("code", {}, r.author.slice(0, 12)), " · ", h("span", { "data-fmt": "ago", "data-ts": r.created_at || "" }, age(r.created_at)), " · wrong? ", h("code", {}, "meshagents retract " + r.id)));
+          h("div", { "class": "mute" }, helperName(r.author), " · ", h("span", { "data-fmt": "ago", "data-ts": r.created_at || "" }, age(r.created_at))),
+          h("details", { "class": "d" }, h("summary", {}, "details"), h("div", { "class": "mute" }, "Wrong rule? Take it back from the terminal: ", h("code", {}, "meshagents retract " + r.id))));
       })));
   } });
   if (M.live.length) items.push({ key: "live", sig: JSON.stringify(M.live), build: function () {
-    return part("Other sessions working now", "The next session starts knowing who else is busy, so it does not collide.",
-      h("div", {}, M.live.map(function (x) { return h("div", { "class": "rule" }, h("div", { "class": "rt" }, x.goal), h("div", { "class": "chips" }, h("code", { "class": "chip" }, x.owner.slice(0, 12)), x.files.slice(0, 4).map(function (f) { return h("code", { "class": "chip" }, base(f)); }))); })));
+    return part("Who else is busy", "The next helper is told who is working right now, so it stays out of their way.",
+      h("div", {}, M.live.map(function (x) { return h("div", { "class": "rule" }, h("div", { "class": "rt" }, h("b", {}, helperName(x.owner)), ": ", x.task || x.goal), h("div", { "class": "chips" }, x.files.slice(0, 4).map(function (f) { return h("code", { "class": "chip" }, base(f)); }))); })));
   } });
   if (M.decisions.length) items.push({ key: "decs", sig: JSON.stringify(M.decisions), build: function () {
-    return part("Recent decisions by others", "The next session starts knowing this. Tainted ones are flagged so it does not build on them.",
+    return part("What changed recently", "The next helper is told about these, so it does not work from old information.",
       h("div", {}, M.decisions.map(function (d) {
-        return h("div", { "class": "rule" }, h("div", { "class": "line" }, tag(d.kind), d.status === "tainted" ? tag("tainted") : null, h("span", { "class": "mute", "data-fmt": "ago", "data-ts": d.created_at || "" }, age(d.created_at))), h("div", { "class": "rt" }, d.text));
+        return h("div", { "class": "rule" }, h("div", { "class": "line" }, tag(d.kind), d.status === "tainted" ? tag("built on a taken-back note", "tainted") : null, h("span", { "class": "mute", "data-fmt": "ago", "data-ts": d.created_at || "" }, age(d.created_at))), h("div", { "class": "rt" }, d.plain || d.text),
+          h("details", { "class": "d" }, h("summary", {}, "details"), h("div", { "class": "mute" }, d.text)));
       })));
   } });
   if (M.handoff) items.push({ key: "handoff", sig: JSON.stringify(M.handoff), build: function () {
     var ho = M.handoff;
-    return part("Latest handoff", "The next session starts knowing where the last one stopped.",
+    return part("Where the last helper stopped", "The next helper picks up from here.",
       h("div", { style: "display:flex;flex-direction:column;gap:12px" },
-        h("div", { "class": "rt", style: "font-weight:600" }, ho.goal),
-        ho.spec ? h("div", {}, h("div", { "class": "sub", style: "margin-top:0" }, "What this session was asked to do"), h("div", { "class": "quote" }, ho.spec)) : null,
+        h("div", { "class": "rt", style: "font-weight:600" }, ho.task || ho.goal),
+        ho.spec ? h("div", {}, h("div", { "class": "sub", style: "margin-top:0" }, "What it was asked to do"), h("div", { "class": "quote" }, ho.spec)) : null,
         ho.note ? h("div", {}, h("div", { "class": "sub", style: "margin-top:0" }, "Where it stopped"), h("div", { "class": "quote" }, ho.note)) : null,
-        ho.files.length ? h("div", { "class": "chips" }, ho.files.map(function (f) { return h("code", { "class": "chip" }, f); })) : null,
-        h("div", { "class": "mute" }, plural(ho.decisions, "decision") + " included · from ", h("code", {}, ho.created_by.slice(0, 12)), " · ", h("span", { "data-fmt": "ago", "data-ts": ho.created_at || "" }, age(ho.created_at)))));
+        ho.files.length ? h("div", { "class": "chips" }, ho.files.map(function (f) { return h("code", { "class": "chip" }, base(f)); })) : null,
+        h("div", { "class": "mute" }, helperName(ho.created_by) + " · ", h("span", { "data-fmt": "ago", "data-ts": ho.created_at || "" }, age(ho.created_at)))));
   } });
   sync(box, items);
   tick();
@@ -684,11 +776,9 @@ function buildGraph(g) {
 
 /* ---------- views, routing, polling ---------- */
 function emptyState() {
-  return h("div", { "class": "empty" },
-    h("h2", { style: "color:var(--ink);margin:0 0 8px" }, S.connected ? "Nothing here yet" : "Waiting for the database"),
-    h("p", {}, "Start a session and MeshAgents fills this page by itself."),
-    h("pre", { "class": "mono" }, "docker compose up -d\n.venv/bin/pip install -e . && .venv/bin/meshagents doctor\nclaude --plugin-dir /path/to/meshagents/plugin"),
-    h("p", { "class": "mute" }, "Or try the scripted demo: .venv/bin/python demo/run_demo.py"));
+  return h("div", { "class": "bigempty" },
+    h("h2", {}, S.connected ? "Nothing here yet" : "Waiting for the database"),
+    h("p", {}, "Start Claude Code in your project and give it a task. This page fills in by itself."));
 }
 function ensureViews() {
   if (VIEWS.board) return;
@@ -722,9 +812,9 @@ function render() {
   ensureViews();
   renderChrome();
   var empty = !S.sessions.length && !S.decisions.length && !S.findings.length;
-  ["board", "memory", "files", "decisions", "code", "graph"].forEach(function (k) { VIEWS[k].el.hidden = empty || k !== view; });
-  VIEWS.empty.el.hidden = !empty;
-  if (empty) { if (!VIEWS.empty.el.firstChild) VIEWS.empty.el.appendChild(emptyState()); return; }
+  ["board", "memory", "files", "decisions", "code", "graph"].forEach(function (k) { VIEWS[k].el.hidden = (empty && k !== "board") || k !== view; });
+  VIEWS.empty.el.hidden = !(empty && view !== "board");
+  if (empty && view !== "board") { if (!VIEWS.empty.el.firstChild) VIEWS.empty.el.appendChild(emptyState()); return; }
   if (view === "board") renderBoard();
   else if (view === "memory") renderMemory();
   else if (view === "files") renderFiles();
@@ -746,16 +836,15 @@ function tick() {
   Array.prototype.forEach.call(document.querySelectorAll("[data-fmt]"), function (el) {
     var ts = parseFloat(el.getAttribute("data-ts")), f = el.getAttribute("data-fmt");
     if (f === "ago") el.textContent = ts ? age(ts) : "";
-    else if (f === "act" || f === "end") {
-      var dot = el.previousSibling, st = el.getAttribute("data-st"), path = el.getAttribute("data-path"), fresh = ts && nowS() - ts < 90, txt, cls = "dot";
-      if (f === "end") { txt = st === "expired" ? "Lease ended" : "Handed off"; }
-      else if (fresh && path) { txt = "Editing " + path; cls += " live"; }
-      else if (ts) { txt = "Idle " + short(ts); cls += " idle"; }
-      else { txt = "Started, no edits yet"; cls += " idle"; }
+    else if (f === "rel") { var rt = ts ? rel(ts) : ""; if (el.textContent !== rt) el.textContent = rt; }
+    else if (f === "act") {
+      var dot = el.previousSibling, st = el.getAttribute("data-st"), path = el.getAttribute("data-path"), fresh = ts && nowS() - ts < 120, txt, cls = "dot";
+      if (st !== "live") { txt = "Finished"; }
+      else if (!path) { txt = "Just started"; cls += " idle"; }
+      else if (fresh) { txt = "Working in " + path; cls += " live"; }
+      else { txt = "Waiting"; cls += " idle"; }
       if (el.textContent !== txt) el.textContent = txt;
       if (dot && dot.className !== cls) dot.className = cls;
-      var when = el.parentNode.nextSibling;
-      if (when && when.className === "when") when.textContent = ts && (f === "end" || fresh) ? age(ts) : "";
     }
   });
 }

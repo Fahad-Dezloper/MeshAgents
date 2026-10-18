@@ -12,11 +12,14 @@ from typing import Any, Dict, List, Optional
 from baton.core import provenance
 from baton.core.tasks import clip_goal
 from baton.graph.client import Store
+from baton.ui import plain
 
 MAX_TASKS = 60
 MAX_DECISIONS = 100
 MAX_FINDINGS = 40
 MAX_FILES = 80
+MAX_NOTICES = 40
+MAX_FEED = 30
 MAX_GRAPH_NODES = 150
 TEXT_CAP = 600
 
@@ -46,6 +49,7 @@ def empty_state(workspace: str, now: float, error: str = "") -> dict:
                    "retracted": 0, "handoffs": 0, "collisions": 0},
         "sessions": [], "files": [], "decisions": [], "findings": [], "handoffs": [],
         "graph": {"nodes": [], "edges": [], "truncated": False},
+        "notices": [], "feed": [],
     }
 
 
@@ -83,6 +87,9 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
             "id": _s(t.get("id"), 80), "short": _s(t.get("owner") or t.get("id"), 80)[:12],
             "owner": _s(t.get("owner"), 80), "is_session": bool(t.get("session")),
             "goal": clip_goal(_s(t.get("goal")), 220), "status": status,
+            "has_goal": not bool(t.get("auto_goal")), "goal_at": _f(t.get("goal_at")) or None,
+            "task": plain.plain_task(_s(t.get("goal"), 700), not bool(t.get("auto_goal"))),
+            "name": "", "helper_n": 0,
             "files": sorted(_s(p, 300) for p in paths)[:30], "file_count": len(paths),
             "last_edit_at": _f(t.get("last_edit_at")) or None,
             "last_edit_path": _s(t.get("last_edit_path"), 300),
@@ -91,6 +98,13 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
             "lease_left": max(0.0, _f(t.get("lease_until")) - now) if status == "live" else 0.0,
             "collides_with": [],
         })
+    # Friendly, stable names: numbered by start time (oldest first) within this workspace
+    ordered = sorted((x for x in sessions if x["is_session"] or x["status"] == "live"),
+                     key=lambda x: (x["created_at"] or 0, x["id"]))
+    for i, x in enumerate(ordered, 1):
+        x["helper_n"], x["name"] = i, "Helper %d" % i
+    for x in sessions:
+        x["name"] = x["name"] or "Helper"
     # Collisions: live sessions sharing a file
     by_file: Dict[str, List[dict]] = {}
     for s in sessions:
@@ -102,11 +116,12 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
         if len(live) > 1:
             collisions.add(p)
             for s in live:
-                s["collides_with"].append({"file": p, "with": [o["short"] for o in live if o is not s]})
+                s["collides_with"].append({"file": p, "with": [o["short"] for o in live if o is not s],
+                                          "with_names": [o["name"] for o in live if o is not s]})
     files = []
     for p, ss in by_file.items():
         files.append({
-            "path": p, "sessions": [{"short": s["short"], "status": s["status"]} for s in ss],
+            "path": p, "sessions": [{"short": s["short"], "name": s["name"], "status": s["status"]} for s in ss],
             "session_count": len(ss), "collision": p in collisions,
             "last_edit_at": max([s["last_edit_at"] or 0 for s in ss] or [0]) or None,
         })
@@ -120,6 +135,7 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
             "id": _s(d.get("id"), 80), "text": _s(d.get("text"), 2000), "kind": _s(d.get("kind") or "note", 20),
             "status": _s(d.get("status") or "open", 20), "author": _s(d.get("author"), 80),
             "created_at": _f(d.get("created_at")) or None, "files": [_s(p, 300) for p in paths][:20],
+            "plain": plain.plain_change(_s(d.get("kind") or "note", 20), _s(d.get("text"), 600), [_s(p, 300) for p in paths]),
             "based_on": [_s(b, 80) for b in based if b], "tainted_by": _s(d.get("tainted_by"), 80),
             "retract_reason": _s(d.get("retract_reason"), 400),
         })
@@ -138,11 +154,65 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
         "handoffs": int(hnd[0][0]) if hnd else 0,
         "collisions": len(collisions),
     }
+    notices = _notices(store, sessions)
+    handoff_at = {_s(r[1], 80): _f(r[2]) for r in ho_rows}
     return {"workspace": ws, "now": now, "connected": True, "error": "", "counts": counts,
+            "notices": notices, "feed": _feed(sessions, decisions, notices, handoff_at),
             "sessions": sessions, "files": files, "decisions": decisions, "findings": findings,
             "handoffs": [{"id": _s(r[0], 80), "created_by": _s(r[1], 80), "created_at": _f(r[2]) or None,
                           "note": _s(r[3], 600), "summary": _s(r[4], 2500)} for r in ho_rows],
             "graph": _graph(sessions, decisions, findings, dep_rows)}
+
+
+def _notices(store: Store, sessions: List[dict]) -> List[dict]:
+    """Heads-ups given to helpers, newest first. Tolerant: no Notice nodes (or any error) means no list."""
+    try:
+        rows = store.rows(
+            "MATCH (a:Actor)-[:WAS_TOLD]->(n:Notice) RETURN a.id, n.id, n.kind, n.summary, n.detail, n.files, n.at "
+            "ORDER BY n.at DESC LIMIT %d" % MAX_NOTICES, read_only=True)
+    except Exception:
+        return []
+    names = {x["owner"]: x["name"] for x in sessions if x["owner"]}
+    out = []
+    for actor, nid, kind, summary, detail, files, at in rows:
+        out.append({"id": _s(nid, 80), "helper": _s(actor, 80), "helper_name": names.get(_s(actor, 80), "A helper"),
+                    "kind": _s(kind or "hint", 20), "summary": _s(summary, 200), "detail": _s(detail, 800),
+                    "files": [_s(f, 300) for f in (files if isinstance(files, list) else [])][:6], "at": _f(at) or None})
+    return out
+
+
+def _feed(sessions, decisions, notices, handoff_at) -> List[dict]:
+    """Plain sentences with times, newest first."""
+    ev: List[dict] = []
+    names = {x["owner"]: x["name"] for x in sessions if x["owner"]}
+
+    def add(at, kind, text, who=""):
+        if at:
+            ev.append({"at": at, "kind": kind, "text": _s(text, 200), "helper": who})
+
+    for x in sessions:
+        if not (x["is_session"] or x["status"] == "live"):
+            continue
+        n = x["name"]
+        add(x["created_at"], "start", "%s started" % n, x["owner"])
+        if x["has_goal"]:
+            add(x["goal_at"], "task", "%s got a task: %s" % (n, x["task"]), x["owner"])
+        if x["last_edit_at"] and x["last_edit_path"]:
+            add(x["last_edit_at"], "work", "%s is working in %s" % (n, plain.base(x["last_edit_path"])), x["owner"])
+        if x["status"] != "live":
+            saved = handoff_at.get(x["owner"])
+            add(saved or x["last_edit_at"] or x["created_at"], "finish",
+                "%s finished%s" % (n, "; notes saved" if saved else ""), x["owner"])
+    for d in decisions:
+        who = names.get(d["author"], "")
+        if d["kind"] == "rule":
+            add(d["created_at"], "rule", "Rule noted: " + plain.clip_word(d["text"], 70), d["author"])
+        else:
+            add(d["created_at"], "change", "%s %s" % (who or "A helper", d["plain"]), d["author"])
+    for nt in notices:
+        add(nt["at"], nt["kind"], "%s was told: %s" % (nt["helper_name"], nt["summary"]), nt["helper"])
+    ev.sort(key=lambda e: -e["at"])
+    return ev[:MAX_FEED]
 
 
 def _graph(sessions, decisions, findings, deps) -> dict:
@@ -366,7 +436,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
 
     t = time.time() if now is None else now
     out = {"now": t, "connected": True, "error": "", "empty": True, "text": "", "chars": 0, "tokens": 0,
-           "live": [], "rules": [], "decisions": [], "handoff": None}
+           "live": [], "rules": [], "decisions": [], "handoff": None, "words": 0}
     actor = PREVIEW_ACTOR
     try:
         live = store.rows(
@@ -413,6 +483,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
             parts.append("- %s: %s%s" % (str(task["owner"])[:13], clip_goal(task["goal"], 160),
                                          " (touching %s)" % ", ".join(paths) if paths else ""))
             out["live"].append({"owner": _s(task["owner"], 80), "goal": clip_goal(_s(task["goal"]), 160),
+                                "task": plain.plain_task(_s(task["goal"], 700), True),
                                 "files": [_s(p, 300) for p in paths]})
     if rules:
         seen: List[str] = []
@@ -430,6 +501,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
             parts.append("- [%s]%s %s" % (d.get("kind", "note"), flag, scrub(d["text"], 200)))
             out["decisions"].append({"id": _s(d.get("id"), 120), "kind": _s(d.get("kind") or "note", 20),
                                      "status": _s(d.get("status"), 20), "text": scrub(d["text"], 200),
+                                     "plain": plain.cap_first(plain.plain_change(_s(d.get("kind") or "note", 20), scrub(d["text"], 200))),
                                      "author": _s(d.get("author"), 80), "created_at": _f(d.get("created_at")) or None})
     if packet:
         parts.append("Latest handoff from a previous session:")
@@ -440,6 +512,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
         out["handoff"] = {
             "id": _s(packet["id"], 80), "created_by": _s(last[0][0].get("created_by"), 80),
             "created_at": _f(last[0][0].get("created_at")) or None, "goal": clip_goal(goal, 220),
+            "task": plain.plain_task(goal, bool(goal) and not task.get("auto_goal")),
             "spec": spec[:1800] if len(spec) > len(goal) + 20 else "", "note": _s(packet.get("note"), 400),
             "files": [_s(p, 300) for p in packet["artifacts"]][:20], "decisions": len(packet["decisions"]),
             "text": _s(packet["text"], 3000)}
@@ -447,7 +520,7 @@ def memory_state(store: Store, now: Optional[float] = None) -> dict:
         text = "[MeshAgents] Coordination context for this repository:\n" + "\n".join(parts)
         if len(text) > ss.BRIEFING_MAX_CHARS:
             text = text[: ss.BRIEFING_MAX_CHARS - 14] + "\n… truncated"
-        out.update(empty=False, text=text, chars=len(text), tokens=_tokens(len(text)))
+        out.update(empty=False, text=text, chars=len(text), tokens=_tokens(len(text)), words=len(text.split()))
     return out
 
 

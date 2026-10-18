@@ -20,29 +20,39 @@ All commands pick the workspace the way the hooks do (`--workspace` or `MESHAGEN
 
 ## First screen: the board
 
-One plain sentence says whether anything is wrong ("2 sessions working", or "... 1 collision risk"), and a three
-column board shows who is doing what:
+Plain English, no jargon. One sentence at the top says whether anything is wrong ("2 helpers working, 1 may clash",
+or "All clear"). Sessions are called **Helper 1, Helper 2, ...** (numbered by start time, stable); the short technical id
+only appears inside the detail panel. Three columns, each with a one-line subtitle:
 
-- **Working**: live sessions with nothing wrong.
-- **Needs attention**: live sessions that share a file with another live session, whose interface change may break
-  callers elsewhere, or that build on a retracted decision. The card says why in one line.
-- **Handed off**: finished sessions (and ones whose lease ended).
+- **Working now** ("Helpers busy right now")
+- **Needs a look** ("Something may clash"): two live helpers in one file, a change that may break another file, or work built on a note that was taken back
+- **Finished** ("Done; their notes are saved for the next helper")
 
-Each card is the session's goal, up to two files, and a status line ("Editing db.py", "Idle 3m").
+A card is the helper name, its task in one short line (first meaningful sentence of the ticket, shared preamble stripped),
+the file it is in as a chip, one status line (Just started / Working in db.py / Waiting / Finished), and at most one badge:
+"Another helper is also in db.py", "Changing this may break api.py", "Built on a note that was taken back" or
+"Was warned and adjusted". A small "Told N heads-ups" line shows when the helper received warnings or briefings.
+
+On the right is the **Live feed**: plain sentences with relative times ("Helper 1 got a task: ...", "Helper 2 was told: Another
+helper is working in db.py"), new lines sliding in at the top, a coloured dot per kind. Below 1180 px it becomes a strip under the columns.
+With no helpers yet the board says "Waiting for the first helper" and shows the command to start one.
 
 ![Board, light](img/ui-board-light.png)
 
-Click a card for the details in a slide-over (Esc or a click outside closes it): files, lease countdown, what else
-touches those files, impact of its changes on callers, the decisions it recorded with their "based on" chain, and its
-handoff. `#session/<id>` in the URL deep-links to a card.
+Click a card for the details in a slide-over (Esc or a click outside closes it): the full task, the heads-ups it was told
+(each with a "show the exact message" disclosure), files, other helpers in them, code that could break, the changes it
+made with their "based on" chain, notes saved for the next helper, and the technical ids. `#session/<id>` deep-links.
 
 ![Session panel](img/ui-panel.png)
 
+`/api/state` carries `notices` (newest first, 40 max, from the `Notice` nodes) and `feed` (30 max); both are empty lists
+when the graph has no such nodes.
+
 ## Other views (sidebar)
 
-- **Memory**: exactly what the next new session would be told right now, as cards: rules and facts people stated (who, when,
-  and the command to retract a wrong one), other sessions working, recent decisions, and the latest handoff including the
-  full request it was given. It shows "about N tokens" for the whole briefing. The Board shows a one-line version.
+- **Next helper** ("What the next helper will be told"): exactly what a new helper would be told right now: Rules you told earlier
+  (the retract command is inside a small "details"), Who else is busy, What changed recently, and Where the last helper stopped.
+  It shows "about N words of notes (small)". The Board shows a one-line version.
   `/api/memory` mirrors `sessions.briefing` read-only (the real function marks the handoff as imported, a dashboard must not write);
   a test pins the two texts together.
 - **Files**: files touched (click one to see what changes with it), with the sessions in each; shared files are flagged.
