@@ -1,0 +1,276 @@
+{
+ "total": 194.136,
+ "crossfade": 0.45,
+ "scenes": [
+  {
+   "id": "hook",
+   "title": "Hook",
+   "start": 0.0,
+   "length": 9.17,
+   "sentences": [
+    {
+     "key": "h1",
+     "text": "Picture this. You are running two AI coding helpers on the same project.",
+     "t": 0.55,
+     "dur": 4.386
+    },
+    {
+     "key": "h2",
+     "text": "They are fast. But they cannot see each other.",
+     "t": 5.406,
+     "dur": 2.564
+    }
+   ]
+  },
+  {
+   "id": "clash",
+   "title": "The clash",
+   "start": 9.17,
+   "length": 29.668,
+   "sentences": [
+    {
+     "key": "c1",
+     "text": "Helper A changes a function. It now needs one more input: the tenant.",
+     "t": 0.55,
+     "dur": 4.432
+    },
+    {
+     "key": "c2",
+     "text": "Helper B is working in another file. It still calls the function the old way.",
+     "t": 5.702,
+     "dur": 4.618
+    },
+    {
+     "key": "c3",
+     "text": "Nobody tells anybody. And the test breaks.",
+     "t": 11.039,
+     "dur": 2.851
+    },
+    {
+     "key": "c4",
+     "text": "The next day, a new helper starts. It knows nothing.",
+     "t": 16.21,
+     "dur": 3.588
+    },
+    {
+     "key": "c5",
+     "text": "Yesterday you said: never use sqlite, the server is read-only. The new helper adds sqlite anyway.",
+     "t": 20.618,
+     "dur": 6.749
+    }
+   ]
+  },
+  {
+   "id": "enter",
+   "title": "Enter MeshAgents",
+   "start": 38.838,
+   "length": 10.948,
+   "sentences": [
+    {
+     "key": "e1",
+     "text": "This is MeshAgents.",
+     "t": 0.55,
+     "dur": 1.38
+    },
+    {
+     "key": "e2",
+     "text": "A shared memory for AI coding helpers.",
+     "t": 2.6,
+     "dur": 2.597
+    },
+    {
+     "key": "e3",
+     "text": "It runs quietly as a Claude Code plugin. You type nothing.",
+     "t": 6.117,
+     "dur": 3.631
+    }
+   ]
+  },
+  {
+   "id": "split",
+   "title": "Same job, with MeshAgents",
+   "start": 49.786,
+   "length": 30.114,
+   "sentences": [
+    {
+     "key": "w1",
+     "text": "Same job, same two helpers. Without it on the left. With MeshAgents on the right.",
+     "t": 0.55,
+     "dur": 5.285
+    },
+    {
+     "key": "w2",
+     "text": "Helper A's edit is written into the graph.",
+     "t": 7.055,
+     "dur": 2.354
+    },
+    {
+     "key": "w3",
+     "text": "Before B edits, it gets a warning. And A is told which callers may break.",
+     "t": 11.029,
+     "dur": 4.764
+    },
+    {
+     "key": "w4",
+     "text": "B adjusts its call. The tests pass.",
+     "t": 18.513,
+     "dur": 2.547
+    },
+    {
+     "key": "w5",
+     "text": "The next day, the new helper is briefed on the rule. So it uses a JSON file instead.",
+     "t": 22.981,
+     "dur": 5.434
+    }
+   ]
+  },
+  {
+   "id": "board",
+   "title": "The live board",
+   "start": 79.9,
+   "length": 10.293,
+   "sentences": [
+    {
+     "key": "b1",
+     "text": "You can watch it all on a live board.",
+     "t": 0.55,
+     "dur": 2.059
+    },
+    {
+     "key": "b2",
+     "text": "And see exactly what the next helper is told: about 370 tokens.",
+     "t": 3.829,
+     "dur": 4.964
+    }
+   ]
+  },
+  {
+   "id": "graph",
+   "title": "How it works, on FalkorDB",
+   "start": 90.193,
+   "length": 31.409,
+   "sentences": [
+    {
+     "key": "f1",
+     "text": "Under the hood it is a graph, built on FalkorDB.",
+     "t": 0.55,
+     "dur": 3.119
+    },
+    {
+     "key": "f2",
+     "text": "Every warning is a question asked of the graph. Who is working on this file?",
+     "t": 4.989,
+     "dur": 4.374
+    },
+    {
+     "key": "f3",
+     "text": "What breaks if I change this function?",
+     "t": 11.183,
+     "dur": 2.127
+    },
+    {
+     "key": "f4",
+     "text": "What was this note based on? If a note is wrong, you see everything built on it.",
+     "t": 15.13,
+     "dur": 4.6
+    },
+    {
+     "key": "f5",
+     "text": "One query claims a task safely. Taking back a wrong note takes about 3 milliseconds. And git history shows which files change together.",
+     "t": 21.85,
+     "dur": 8.06
+    }
+   ]
+  },
+  {
+   "id": "numbers",
+   "title": "The numbers",
+   "start": 121.602,
+   "length": 33.66,
+   "sentences": [
+    {
+     "key": "n1",
+     "text": "Does it work? In 180 runs, clean results went from 53 percent to 80.",
+     "t": 0.55,
+     "dur": 5.451
+    },
+    {
+     "key": "n2",
+     "text": "A new session finishing its job: 45 percent with no memory, 92 with a notes file, and 95 with MeshAgents.",
+     "t": 7.321,
+     "dur": 8.1
+    },
+    {
+     "key": "n3",
+     "text": "One rule hidden among 20 others: found 10 times out of 10.",
+     "t": 16.741,
+     "dur": 3.891
+    },
+    {
+     "key": "n4",
+     "text": "Each clean result costs 29 percent less. A single run costs about the same.",
+     "t": 21.753,
+     "dur": 5.06
+    },
+    {
+     "key": "n5",
+     "text": "And on a second, stronger model: 33 percent to 83.",
+     "t": 28.032,
+     "dur": 4.327
+    }
+   ]
+  },
+  {
+   "id": "honest",
+   "title": "The honest part",
+   "start": 155.262,
+   "length": 20.953,
+   "sentences": [
+    {
+     "key": "g1",
+     "text": "Now, the honest part.",
+     "t": 0.55,
+     "dur": 1.795
+    },
+    {
+     "key": "g2",
+     "text": "The tests are built to make helpers collide, so real projects will see fewer clashes.",
+     "t": 3.165,
+     "dur": 5.016
+    },
+    {
+     "key": "g3",
+     "text": "A notes file does about as well on memory, but someone has to keep it up.",
+     "t": 9.301,
+     "dur": 4.13
+    },
+    {
+     "key": "g4",
+     "text": "And one test, two helpers adding the same stock reservation, is still not fixed.",
+     "t": 14.551,
+     "dur": 5.302
+    }
+   ]
+  },
+  {
+   "id": "try",
+   "title": "Try it",
+   "start": 176.215,
+   "length": 17.921,
+   "sentences": [
+    {
+     "key": "t1",
+     "text": "Try it. Clone the repo, run meshagents doctor, and start Claude Code with the plugin.",
+     "t": 0.55,
+     "dur": 5.422
+    },
+    {
+     "key": "t2",
+     "text": "MeshAgents. A shared memory for AI coding helpers. Built on FalkorDB.",
+     "t": 7.692,
+     "dur": 5.229
+    }
+   ]
+  }
+ ]
+}
