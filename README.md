@@ -34,6 +34,7 @@ One graph per workspace (`baton_<workspace>`), so one workspace cannot address a
 | `Finding` | id, text, source, confidence, status |
 | `Artifact` | path |
 | `Handoff` | id, note |
+| `Symbol` | id (`path::qualified.name`), name, kind (function/method/class/module), sig, path, line |
 
 | Relationship | Meaning |
 |---|---|
@@ -44,6 +45,8 @@ One graph per workspace (`baton_<workspace>`), so one workspace cannot address a
 | `(Decision)-[:BASED_ON]->(Decision \| Finding)` | provenance |
 | `(Decision)-[:SUPERSEDES]->(Decision)` | replacement |
 | `(Handoff)-[:INCLUDES]->(Task \| Decision \| Finding \| Artifact)` | session handoff packet |
+| `(Artifact)-[:DEFINES]->(Symbol)` | what a file defines |
+| `(Symbol)-[:CALLS]->(Symbol)` | resolved call sites (from imports and definitions, never guessed) |
 
 ## Key Cypher
 All queries are named and parameterized in [`src/baton/graph/queries.py`](src/baton/graph/queries.py);
@@ -72,6 +75,12 @@ WHERE d.author <> $actor_id AND d.status IN ['open', 'tainted'] AND d.kind <> 'n
   AND a.path <> $path AND (a.path STARTS WITH $prefix OR a.path IN $near)
 RETURN d, a.path ORDER BY coalesce(d.updated_at, d.created_at) DESC LIMIT 20
 ```
+Callers elsewhere that a call-shape change breaks (the code graph; used right after an edit):
+```cypher
+MATCH (c:Symbol)-[:CALLS]->(s:Symbol)
+WHERE s.path = $path AND s.qual IN $changed AND c.path <> $path
+RETURN s.qual, c.path, c.qual ORDER BY c.path
+```
 Blast radius of a wrong fact (everything derived from it, transitively), used by `retract`:
 ```cypher
 MATCH (root:Finding {id: $id})<-[:BASED_ON*1..8]-(d:Decision) RETURN DISTINCT d
@@ -91,10 +100,29 @@ The demo script drives the same hook handlers the plugin uses, with the same pay
 prints what each session would be told: recorded decisions, a cross-file warning, a same-file
 collision, a next-day handoff briefing, and a retraction that taints derived decisions.
 
+## See what your sessions are doing
+```sh
+baton ui                  # read-only dashboard at http://127.0.0.1:7777 (localhost only, no dependencies)
+baton status              # live sessions, leases, shared files, latest decisions (--json available)
+baton why <id>            # what a decision was based on, and what depends on it
+baton retract <id> --reason "..."   # asks first, prints what became tainted
+baton handoff             # latest handoff briefing
+```
+The dashboard shows a tower of live sessions with collision badges, contested files, a decision feed,
+a provenance graph with a retraction preview, the code map and the impact of recent changes. See
+[docs/UI.md](docs/UI.md).
+
 ## Use with Claude Code
 ```sh
 claude --plugin-dir /path/to/baton/plugin     # use it in any project; hooks + tools, no commands to remember
 ```
+**Code graph.** On the first session baton indexes the project's Python definitions and call sites into
+the graph (incrementally afterwards). When a session changes how a function is called (a new required
+parameter, reordered or removed parameters, a rename), it is told right after the edit which callers
+elsewhere will break and which live sessions are working in those files. Compatible changes (a new
+parameter with a default) stay silent. Calls are resolved from imports and definitions only; a call on
+an object of unknown type is not linked. `BATON_CODE_GRAPH=0` turns it off.
+
 Automatic: a session is briefed on other live sessions and the latest handoff; edits are checked
 against other sessions' work; file changes and renames are recorded; interface, config and
 dependency changes become decisions on their own (derived deterministically from the edit payload,
@@ -113,7 +141,7 @@ Settings (`.baton.json` in the project, or environment): `policy` = `warn` (defa
 `deny`; `enabled`; `lease_seconds`; `capture`. `BATON_DISABLED=1` turns it off. **Fails open:** if the
 store is unreachable, hooks print nothing and never block the session. Each hook call takes roughly 0.1-0.15 s.
 
-Tests: `.venv/bin/python -B -m unittest discover -s tests -t .` (131 tests, run against a live FalkorDB v4.22.1; also passed on 6.0.2).
+Tests: `.venv/bin/python -B -m unittest discover -s tests -t .` (155 tests, run against a live FalkorDB v4.22.1; also passed on 6.0.2).
 
 ## Evaluation (honest summary)
 Parallel Claude Code sessions (cheap model) are started at the same moment on one shared checkout
@@ -164,6 +192,7 @@ Limits: small samples, one model, one fixture project, tasks and scorer written 
 ```
 src/baton/        core library, MCP server, hook entry points
 plugin/           Claude Code plugin (manifest, hooks; optional-mcp.json for the MCP server)
+src/baton/ui/     read-only dashboard (stdlib only)
 demo/             scripted scenario and Browser queries
 evals/clash/      collision tasks, fixture project and checker
 evals/harbor/     containerised runner for the evaluation
