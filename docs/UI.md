@@ -13,31 +13,45 @@ baton impact <path>                         # callers of a file's public symbols
 
 All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WORKSPACE` override it).
 
-![Dashboard](img/ui-dashboard.png)
+![Board, dark](img/ui-board-dark.png)
 
-## Views
+## First screen: the board
 
-- **Header**: workspace, FalkorDB connection, counts of live sessions, open decisions, collisions, tainted decisions, handoffs.
-- **Tower**: one card per session, live first: goal, files touched, last edit age, lease countdown. Sessions that
-  edit the same file get a red "collision risk" badge naming the other session and the shared files.
-- **Files**: files ordered by how many sessions touched them, contested first.
-- **Decisions**: newest first, with kind (interface, config, storage, rename, note), author, files and status
-  (open, superseded, retracted, tainted). "show based on" expands the upstream chain.
-- **Provenance**: "provenance" or "blast radius" opens a layered graph: sources left, derived decisions right, plus a
-  preview of what retracting the item would taint. The preview is read-only. The URL fragment `#id=<id>` deep-links to it.
-- **Impact of recent changes**: for each open interface decision whose text says "signature changed" or "removed",
-  the callers in other files (from the code graph), flagged "being edited by ..." when a live session is in that file.
-- **Code map**: files as nodes, caller -> callee arrows weighted by call count (60 files, 150 edges max). Red nodes have a
-  live session in them, "iface" marks an open interface decision. Click a file for its symbols (signature, line),
-  "called from" and "calls into". Data comes from `/api/code`; the index is built by the hooks and `demo/run_demo.py`.
-- **Graph**: deterministic overview of tasks, files, decisions and findings (capped at 150 nodes); hover for detail.
-- With an empty graph the page shows the three start commands instead.
+One plain sentence says whether anything is wrong ("2 sessions working", or "... 1 collision risk"), and a three
+column board shows who is doing what:
 
-![Provenance](img/ui-provenance.png)
+- **Working**: live sessions with nothing wrong.
+- **Needs attention**: live sessions that share a file with another live session, whose interface change may break
+  callers elsewhere, or that build on a retracted decision. The card says why in one line.
+- **Handed off**: finished sessions (and ones whose lease ended).
 
-Light theme: `img/ui-light.png`; a 400 px wide layout: `img/ui-narrow.png` (the maps scroll sideways inside their box).
+Each card is the session's goal, up to two files, and a status line ("Editing db.py", "Idle 3m").
 
-The page polls `/api/state` every 1.5 s. If FalkorDB is down it shows a banner and keeps polling.
+![Board, light](img/ui-board-light.png)
+
+Click a card for the details in a slide-over (Esc or a click outside closes it): files, lease countdown, what else
+touches those files, impact of its changes on callers, the decisions it recorded with their "based on" chain, and its
+handoff. `#session/<id>` in the URL deep-links to a card.
+
+![Session panel](img/ui-panel.png)
+
+## Other views (sidebar)
+
+- **Files**: files touched, with the sessions in each; shared files are flagged.
+- **Decisions**: newest first, filter All / Open / Tainted or retracted. "Provenance" draws the why-chain and blast
+  radius and previews what a retraction would taint (read-only; retract from the terminal).
+- **Code**: impact of recent interface changes (callers elsewhere, flagged when a live session is in that file) and
+  the code map: files as nodes, caller to callee arrows weighted by call count. Click a file for its symbols and callers.
+- **Graph**: overview of tasks, files, decisions and findings (150 nodes max).
+
+![Decisions](img/ui-decisions.png)
+![Code](img/ui-code.png)
+
+The page polls every 1.5 s and updates cards in place, so scroll position and an open panel stay put. If FalkorDB is
+down it shows a banner and keeps polling. It follows the system light/dark setting; the sidebar button overrides it.
+Below 860 px the sidebar becomes a tab row and the columns stack.
+
+![Narrow](img/ui-narrow.png)
 
 ## Security notes
 
