@@ -18,7 +18,13 @@ OUT = os.path.join(ROOT, "video", "rec", "screen", "take" + take)
 PORT, DBG, WS = 7756, 9334, "rec_screen"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PY = os.path.join(ROOT, ".venv", "bin", "python")
-ZOOM = float(os.environ.get("REC_ZOOM", "1.5"))  # CSS 1200x720 (wide enough for the feed on the right), screenshots 1800x1080
+CSS_W, CSS_H = int(os.environ.get("REC_W", "900")), int(os.environ.get("REC_H", "783"))  # fits the right pane exactly: screenshot = 1080x940
+ZOOM = 1080 / CSS_W
+
+
+SCROLL_JS = """(function(){var f=document.querySelector('.feed'); var el=document.scrollingElement||document.documentElement;
+if(!f){return 0;} var top=f.getBoundingClientRect().top+el.scrollTop;
+var want=Math.max(0, top+230-window.innerHeight); var cur=el.scrollTop; el.scrollTop=cur+(want-cur)*0.35; return want;})()"""
 
 
 async def main():
@@ -57,7 +63,7 @@ async def main():
                     m = json.loads(await ws.recv())
                     if m.get("id") == n:
                         return m.get("result", {})
-            await call("Emulation.setDeviceMetricsOverride", width=1200, height=720, deviceScaleFactor=ZOOM, mobile=False)
+            await call("Emulation.setDeviceMetricsOverride", width=CSS_W, height=CSS_H, deviceScaleFactor=ZOOM, mobile=False)
             await call("Emulation.setEmulatedMedia", features=[{"name": "prefers-color-scheme", "value": "dark"}])
             await call("Page.navigate", url=f"http://127.0.0.1:{PORT}/")
             await asyncio.sleep(1.5)
@@ -81,6 +87,8 @@ async def main():
                 while True:
                     if end is not None and time.time() >= end: break
                     if until is not None and until(): break
+                    if view == "board":  # keep the top lines of the Live feed in view when the cards stack tall (what a person would scroll to)
+                        await call("Runtime.evaluate", expression=SCROLL_JS)
                     r = await call("Page.captureScreenshot", format="jpeg", quality=90)
                     name = f"frames/{len(frames):05d}.jpg"
                     open(os.path.join(OUT, name), "wb").write(base64.b64decode(r["data"]))
@@ -96,7 +104,7 @@ async def main():
             await grab(until=lambda: state["s3"] is not None)
             await grab(seconds=3.0)
             marks["click_next"] = round(time.time() - t0, 3)
-            await call("Runtime.evaluate", expression="Array.from(document.querySelectorAll('a,button')).filter(e=>/Next helper/.test(e.textContent))[0].click()")
+            await call("Runtime.evaluate", expression="Array.from(document.querySelectorAll('a,button')).filter(e=>/Next helper/.test(e.textContent))[0].click(); (document.scrollingElement||document.documentElement).scrollTop=0")
             await grab(seconds=5.0, view="memory")
             json.dump(frames, open(os.path.join(OUT, "frames.json"), "w"))
             span = frames[-1]["t"] - frames[0]["t"]

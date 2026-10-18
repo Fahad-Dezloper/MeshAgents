@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw
 from gfx import *
 
 HERE = os.path.dirname(os.path.abspath(__file__)); FPS = 30; TOTAL = 58.0
-TAKE = os.environ.get("DEMO_TAKE", "2"); REC = f"{HERE}/rec/screen/take{TAKE}"
+TAKE = os.environ.get("DEMO_TAKE", "6"); REC = f"{HERE}/rec/screen/take{TAKE}"
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
 from baton import demo_kit
 PROMPTS = demo_kit.PROMPTS
@@ -25,20 +25,6 @@ def frame(r):
         if len(_img) > 4: _img.clear()
         _img[p] = Image.open(p).convert("RGB")
     return _img[p]
-
-# video time -> recording time. (video start, video end, recording start); hard cuts between rows
-SEGS = [(0.0, 4.0, 0.05), (6.5, 23.5, 4.0), (23.5, 29.0, 34.0), (29.0, 37.0, 46.0), (37.0, 40.0, 71.0), (40.0, 43.0, 87.0), (43.0, 49.0, 91.5)]
-CUTS = [23.5, 29.0, 37.0, 40.0, 43.0]
-def v2rec(v):
-    if 4.0 <= v < 6.5: return 3.9
-    for vs, ve, rs in SEGS:
-        if vs <= v < ve: return rs + (v - vs)
-    return min(SEGS[-1][2] + (v - SEGS[-1][0]), FT[-1])
-def rec2v(r):
-    """first video time at which recording time r has been reached"""
-    for vs, ve, rs in SEGS[1:]:
-        if r <= rs + (ve - vs): return vs + max(r - rs, 0.0)
-    return 1e9
 
 # ---------- terminal lines from the real run ----------
 def rel(p): return os.path.basename(p)
@@ -79,6 +65,21 @@ t, f = first_read("s3"); LINES[3].append((t, "Reading " + f, "plain"))
 tj = next(t for t, n, i in EV["s3"] if n == "Write" and "json" in i.get("content", "").lower() and i["file_path"].endswith("db.py"))
 LINES[3].append((tj, "Saved orders to a JSON file", "plain"))
 LINES[3].append((M["end_s3"], "Done", "done"))
+# video time -> recording time. (video start, video end, recording start); hard cuts between rows.
+# Anchors come from this take's own events, so the beats line up whatever the timing of the run was.
+CUTS = [23.5, 29.0, 37.0, 40.0, 43.0]
+SEGS = [(0.0, 4.0, 0.05), (6.5, 23.5, 4.0), (23.5, 29.0, tw_ - 1.4), (29.0, 37.0, M["start_s3"] - 4.5), (37.0, 40.0, tj - 1.6), (40.0, 43.0, M["end_s3"] - 2.0), (43.0, 49.0, M["click_next"] - 0.6)]
+def v2rec(v):
+    if 4.0 <= v < 6.5: return 3.9
+    for vs, ve, rs in SEGS:
+        if vs <= v < ve: return rs + (v - vs)
+    return min(SEGS[-1][2] + (v - SEGS[-1][0]), FT[-1])
+def rec2v(r):
+    """first video time at which recording time r has been reached"""
+    for vs, ve, rs in SEGS[1:]:
+        if r <= rs + (ve - vs): return vs + max(r - rs, 0.0)
+    return 1e9
+
 ENTER = {1: M["start_s1"], 2: M["start_s2"], 3: M["start_s3"]}
 VENTER = {1: 6.5, 2: rec2v(M["start_s2"]), 3: rec2v(M["start_s3"])}
 VENTER[2] = VENTER[2] - 0.0
@@ -126,14 +127,7 @@ def paste_round(c, pil, x, y, w, h, r=10):
     m = Image.new("L", im.size, 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, im.size[0] - 1, im.size[1] - 1), r * S, fill=255)
     c.img.paste(im, (int(x * S), int(y * S)), m)
 
-RX, RW = 826, 1084; CROPX = 348
-# zoom 0 = the whole board with the feed; 1 = zoomed on the feed (when a heads-up lands)
-FOCUS = [(0, 0.5), (6.6, 0.5), (7.4, 0), (13.2, 0), (13.9, 1), (18.6, 1), (19.3, 0), (23.8, 0), (24.4, 1), (28.4, 1), (29.1, 0), (33.6, 0), (34.2, 1), (36.4, 1), (37.0, 0), (49, 0)]
-def focus(v):
-    for (a, x), (b, y) in zip(FOCUS, FOCUS[1:]):
-        if a <= v < b: return lerp(x, y, e_io(prog(v, a, b - a)))
-    return 0.0
-CW = 1000
+RX, RW = 826, 1084
 def dash(c, v):
     ch = 940.0
     wy = 12; wh = 52 + ch + 4
@@ -141,11 +135,7 @@ def dash(c, v):
     c.rect(RX, wy, RW, 52, 16, fill=PANEL2); c.rect(RX, wy + 30, RW, 22, 0, fill=PANEL2)
     for i, col in enumerate([(255, 95, 86), (255, 189, 46), (39, 201, 63)]): c.circle(RX + 28 + i * 26, wy + 26, 8, fill=col)
     c.text(RX + RW / 2, wy + 26, "MeshAgents dashboard", 26, MUTED, "m", anchor="m")
-    r = v2rec(v); i = min(max(bisect.bisect_left(FT, r), 0), len(FT) - 1)
-    mem = FR[i]["view"] == "memory"
-    x0 = int(lerp(CROPX, 800, 0 if mem else focus(v))); y0 = 40 if mem else 100
-    src = frame(r).crop((x0, y0, x0 + CW, y0 + int(CW * ch / (RW - 4))))
-    paste_round(c, src, RX + 2, wy + 52, RW - 4, ch, 10)
+    paste_round(c, frame(v2rec(v)), RX + 2, wy + 52, RW - 4, ch, 10)  # the whole recorded page, no crop (1080x940 -> 1:1)
     for cv in CUTS:
         if 0 <= v - cv < 1.1:
             a = e_out(prog(v - cv, 0, 0.12)) * (1 - e_in(prog(v - cv, 0.8, 0.3)))
