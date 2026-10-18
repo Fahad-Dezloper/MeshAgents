@@ -3,7 +3,7 @@
 Static page: no build step, no CDN, no external fonts or scripts. Works from `file://` and on any static host.
 
 ## Layout
-Hero with a framed live-board window, a marquee of real proof numbers, four alternating feature sections, charts, a sideways "results wall" of real results, the ESTIMATE calculator, how it works, install steps, FAQ, the fine print, a closer and a footer. Dark by default; the theme toggle is in the footer.
+Hero (headline, subtitle, two buttons, install pill, framed board screenshot), proof marquee, a four-box bento grid, three number cards, the ESTIMATE calculator, a 3-step "Try it in 2 minutes", a 5-question FAQ and the footer. Dark by default; theme toggle in the footer. Screenshots in `assets/` are real captures of the dashboard (WebP, device scale 2).
 
 ## Preview
 Open `site/index.html` in a browser, or run `python3 -m http.server -d site 8000` and visit http://localhost:8000.
@@ -16,7 +16,7 @@ Add `?static` to the URL to show everything at once (no scroll animations, detai
 
 ## Rename the product
 Edit `name` in `site/config.js` (and `cli` / `dir` if the command or folder changes). Name, tagline, repo URL
-(a placeholder for now), video and blog links, and the install commands all render from that file.
+video and blog links (an empty `video` hides the hero demo button), and the three install steps all render from that file.
 
 ## Numbers
 Every number lives in `site/facts.js` with a `_src` note. The page renders from it via `data-fact` attributes.

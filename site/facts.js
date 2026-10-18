@@ -50,21 +50,14 @@ window.FACTS = {
     "graphs": 25, "notes_each": 200, "ms": 3, "precision": 1.0, "recall": 1.0,
     "search_mixed_pct": 65, "search_paraphrase_pct": 0
   },
-  "codegraph": {"_src": "docs/RESULTS.md (code-graph round)", "trials": 40, "fired": 1},
   "second": {
     "_src": "docs/RESULTS.md round 7, part 2 (second, stronger model; levels L3, L4, L9, 8 runs each, list prices)",
     "runs": 24, "with_clean": 20, "without_clean": 8, "with_pct": 83, "without_pct": 33,
     "gap_points": 50, "ci_low": 25, "ci_high": 72, "p": 0.001, "levels_count": 3, "runs_per_level": 8,
     "cost_clean_with": 0.115, "cost_clean_without": 0.314, "models": 2
   },
+  "proof": {"_src": "180 collision runs + 150 memory runs (docs/RESULTS.md round 6, docs/RESULTS-RELAY.md)", "total_runs": 330},
   "tests": {"_src": "automatic test suite (tests/), all passing", "count": 245},
-  "research": {
-    "_src": "[from the papers' abstracts] as summarised in docs/research/02-evidence-and-benchmarks.md; outside context, not our measurements",
-    "year": 2026,
-    "conflict_other_pct": 41.7, "conflict_same_pct": 19.8, "prs": 33596, "arxiv_conflict": "2607.04697",
-    "memory_from_pct": 12, "memory_to_low_pct": 45, "memory_to_high_pct": 54, "arxiv_memory": "2608.20664",
-    "real_pairs": 417, "real_pairs_broken": 1, "arxiv_real": "2609.25396"
-  },
   "calc": {
     "_src": "ESTIMATE inputs. Defaults are deliberately modest assumptions, not measurements. weeks_per_month = 52 / 12.",
     "default_sessions": 40, "default_cost": 0.5, "default_share_pct": 20, "weeks_per_month": 4.33, "weeks_per_year": 52, "months_per_year": 12

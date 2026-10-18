@@ -19,27 +19,31 @@
   </symbol>
   <symbol id="gh" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></symbol>
   <symbol id="cp" viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3 11V4a1 1 0 0 1 1-1h7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z M12 10v4.5 M12 17.2v.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-mem" viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6V3Z M6 3v18 M10 8h6 M10 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M4 12h13 M13 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M6.3 6.3a8 8 0 0 0 0 11.4 M17.7 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
 </svg>
 
 <header class="nav">
   <div class="wrap nav-in">
     <a class="brand" href="#top" aria-label="Home"><svg class="logo" aria-hidden="true"><use href="#mark"/></svg><span data-name></span></a>
     <nav aria-label="Main">
-      <a href="#features">Features</a><a href="#numbers">Numbers</a><a href="#estimate">Estimate</a><a href="#faq">FAQ</a><a href="#fine-print">Fine print</a>
+      <a href="#features">Features</a><a href="#numbers">Numbers</a><a href="#estimate">Estimate</a><a href="#try">Try it</a><a href="#faq">FAQ</a>
     </nav>
     <a class="pill white sm" href="#try">Get started</a>
   </div>
 </header>
 
 <main id="main">
-<!-- HERO -->
 <section class="hero" id="top">
   <div class="wrap center">
     <h1>Stop AI helpers from<br>stepping on each other.</h1>
-    <p class="hero-sub">A shared memory for coding helpers on the same project. They warn each other before a clash, and the next session starts out knowing what the last one was told.</p>
+    <p class="hero-sub">A shared memory for coding helpers on one project.</p>
     <div class="cta">
       <a class="pill white" href="#features">See it work</a>
       <a class="pill line" data-repo href="#"><svg class="ic" aria-hidden="true"><use href="#gh"/></svg>GitHub</a>
+      <a class="pill line" data-video href="#" hidden>Watch the 1-minute demo</a>
     </div>
     <div class="cmd-pill" id="hero-cmd"><span class="pr">$</span><code></code><button type="button" class="cp-btn" aria-label="Copy command"><svg class="ic" aria-hidden="true"><use href="#cp"/></svg><span>Copy</span></button></div>
   </div>
@@ -47,15 +51,14 @@
     <div class="stage">
       <div class="win hero-win">
         <div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>live board</span></div>
-        <img src="assets/ui-board-dark.png" alt="The live board: working sessions, sessions that need attention, and finished sessions" width="1400" height="700">
+        <img src="assets/hero.webp" alt="The live board: three helpers, a warning badge, and the live feed" width="2560" height="1600">
       </div>
     </div>
   </div>
 </section>
 
-<!-- MARQUEE: real proof facts -->
 <section class="marq-sec" aria-label="Proof numbers from our own tests">
-  <div class="wrap marq-head"><span class="badge-cc"><svg class="logo" aria-hidden="true"><use href="#mark"/></svg>Works with Claude Code</span><span class="tiny">Numbers from our own tests. Limits in the <a href="#fine-print">fine print</a>.</span></div>
+  <div class="wrap marq-head"><span class="badge-cc"><svg class="logo" aria-hidden="true"><use href="#mark"/></svg>Works with Claude Code</span></div>
   <div class="marq" id="marq">
     <div class="marq-track">
       <ul class="marq-set">
@@ -67,340 +70,86 @@
         <li><b data-fact="tests.count" data-fmt="num">245</b> automatic tests</li>
         <li><b data-fact="cost.hook_errors" data-fmt="num">0</b> hook errors in the runs</li>
         <li><b data-fact="retract.ms" data-fmt="num">3</b> ms to trace a wrong note</li>
-        <li><b data-fact="collision.runs_total" data-fmt="num">180</b> + <b data-fact="memory.runs_total" data-fmt="num">150</b> test runs</li>
       </ul>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
 <section class="sec" id="features">
   <div class="wrap">
-    <div class="feat reveal">
-      <div class="feat-t">
-        <p class="eyebrow c1">Warns before a clash</p>
-        <h2>Told before you step on a teammate.</h2>
-        <p>When another session is working in the file you are about to edit, you hear about it first. Change how a function is called, and you are told which callers elsewhere may now break.</p>
-        <div class="stat"><span class="big"><span data-fact="collision.with_pct" data-fmt="num" data-suffix="%" data-count>80%</span></span><span class="vs">vs <b data-fact="collision.without_pct" data-fmt="num" data-suffix="%">53%</b><small>of runs finish clean when helpers collide, with it vs without.</small></span></div>
-      </div>
-      <div class="feat-v">
-        <div class="win term"><div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>what a session is told</span></div>
-          <div class="term-body">
-            <p><b>[<span data-name></span>] Possible collision on shop/db.py:</b> another live session is working in it now (Ticket <span data-fact="example.ticket" data-fmt="num">12</span>: make get_order take an include_cancelled flag).</p>
-            <p><b>[<span data-name></span>] You changed how shop/db.py is called</b> (get_order: new required parameter). <em>Callers elsewhere that may now break:</em></p>
-            <p class="ind">- shop/api.py (another session is working in it now)</p>
-            <p>Update them or keep the old call shape working.</p>
-            <p class="dim">Files that usually change with shop/db.py: tests/test_db.py (<span data-fact="example.commits_a" data-fmt="num">9</span> of <span data-fact="example.commits_total" data-fmt="num">11</span> commits), shop/api.py (<span data-fact="example.commits_b" data-fmt="num">7</span> of <span data-fact="example.commits_total" data-fmt="num">11</span> commits).</p>
-          </div>
+    <h2 class="h2c">Four things, all automatic.</h2>
+    <div class="bento">
+      <article class="bx b1 reveal">
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-warn"/></svg><h3>Warns before a clash</h3><p>The second helper hears it first.</p></div>
+        <div class="bx-v split">
+          <div class="mock"><p><b>[<span data-name></span>] Possible collision on shop/db.py:</b> another helper is working in it now.</p><p><em>Callers elsewhere that may now break:</em></p><p class="ind">- shop/api.py</p></div>
+          <div class="shotframe"><img loading="lazy" src="assets/card.webp" alt="A helper card with a warning badge and Told 1 heads-up" width="594" height="1017"></div>
         </div>
-      </div>
-    </div>
-
-    <div class="feat rev reveal">
-      <div class="feat-t">
-        <p class="eyebrow c2">Remembers and hands over</p>
-        <h2>The next session starts out informed.</h2>
-        <p>What changed, why, and the rules people stated once ("never use sqlite here") are kept. The next session begins with the unfinished job and those rules, with nothing for you to write up.</p>
-        <div class="stat"><span class="big"><span data-fact="memory.tool_pct" data-fmt="num" data-suffix="%" data-count>95%</span></span><span class="vs">vs <b data-fact="memory.none_pct" data-fmt="num" data-suffix="%">45%</b><small>of next sessions finish the job when they need something said earlier.</small></span></div>
-      </div>
-      <div class="feat-v">
-        <div class="win"><div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>memory: what the next session will be told</span></div>
-          <div class="crop c43"><img loading="lazy" src="assets/ui-memory-dark.png" alt="The memory view: rules people stated, other sessions, recent decisions and the latest handoff" width="1400" height="1500"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="feat reveal">
-      <div class="feat-t">
-        <p class="eyebrow c3">Costs about the same</p>
-        <h2>You pay less for each clean result.</h2>
-        <p>The first version made helpers do more work. The shipped one is at parity, and because fewer runs need redoing, each clean result costs less. Each step takes about <span data-fact="cost.hook_seconds" data-fmt="num" data-dec="1">0.1</span> s.</p>
-        <div class="stat"><span class="big"><span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%" data-count>29%</span></span><span class="vs"><small>cheaper per clean result in the collision test (an estimate from list prices).</small></span></div>
-      </div>
-      <div class="feat-v">
-        <div class="win"><div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>cost of each clean result</span></div>
-          <div class="win-pad"><div class="rows slim" data-chart="feat-cost"></div><p class="tiny">Without vs with <span data-name></span>, from recorded runs.</p></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="feat rev reveal">
-      <div class="feat-t">
-        <p class="eyebrow c4">Stays in your control</p>
-        <h2>Read-only, local, and out of your way.</h2>
-        <p>The board only reads. Everything runs on your machine. If the database is down, it stays quiet and your session carries on. A wrong note can be taken back, and you see everything built on it.</p>
-        <div class="stat"><span class="big"><span data-fact="cost.hook_errors" data-fmt="num" data-count>0</span></span><span class="vs"><small>hook errors across the evaluation runs. It never blocks a session.</small></span></div>
-      </div>
-      <div class="feat-v">
-        <div class="win"><div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>decisions, with the notes built on a wrong one</span></div>
-          <div class="crop c43"><img loading="lazy" src="assets/ui-decisions.png" alt="The decisions view: notes flagged because they were built on a note that was taken back" width="1400" height="1000"></div>
-        </div>
-      </div>
+      </article>
+      <article class="bx b2 reveal d1">
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-mem"/></svg><h3>Remembers what changed</h3><p>Every change is noted, with its reason.</p></div>
+        <div class="bx-v"><div class="shotframe"><img loading="lazy" src="assets/nextc.webp" alt="The next-helper view: who else is busy and what changed recently" width="1200" height="860"></div></div>
+      </article>
+      <article class="bx b3 reveal">
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-hand"/></svg><h3>Hands over to the next helper</h3><p>It starts with your rules and notes.</p></div>
+        <div class="bx-v fade"><div class="shotframe narrowf"><img loading="lazy" src="assets/feed.webp" alt="The live feed with heads-up lines" width="624" height="1144"></div></div>
+      </article>
+      <article class="bx b4 reveal d1">
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-live"/></svg><h3>Shows it live</h3><p>See every helper at a glance.</p></div>
+        <div class="bx-v"><div class="shotframe"><img loading="lazy" src="assets/boardc.webp" alt="The board with working, needs-a-look and finished columns and the live feed" width="1980" height="1040"></div></div>
+      </article>
     </div>
   </div>
 </section>
 
-<!-- NUMBERS -->
 <section class="sec" id="numbers">
   <div class="wrap">
-    <p class="eyebrow c1">The numbers</p>
-    <h2 class="h2l">Measured, not promised.</h2>
-    <p class="sub">Every figure below is drawn from our recorded test runs. Where something did not work, it says so.</p>
-    <!-- a -->
-    <figure class="chart reveal" id="chart-levels">
-      <div class="chart-head">
-        <h3>Helpers that collide: runs that finish clean</h3>
-        <div class="legend"><span class="k without"></span>Without it <span class="k with"></span>With <span data-name></span></div>
-      </div>
-      <div class="hbig"><span class="big sm" data-fact="collision.with_clean" data-fmt="num" data-count>72</span><span class="of">of <span data-fact="collision.runs_per_side" data-fmt="num">90</span> clean with it</span><span class="sep"></span><span class="big sm mute" data-fact="collision.without_clean" data-fmt="num" data-count>48</span><span class="of">of <span data-fact="collision.runs_per_side" data-fmt="num">90</span> without</span></div>
-      <div class="rows" data-chart="levels" role="img" aria-label="Clean runs out of ten, per test level, without and with the notebook"></div>
-      <figcaption>
-        <p class="take"><b>Plain words:</b> three sessions adding discount, tax and a report to the same code went from <span data-fact="collision.levels.2.without" data-fmt="num">0</span> clean runs in <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span> to <span data-fact="collision.levels.2.with" data-fmt="num">9</span> in <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span>. No test level got worse, one stayed equal, and the stock-reservation test (L6) is still not fixed.</p>
-        <p class="foot"><b>How we measured:</b> each of <span data-fact="collision.levels_count" data-fmt="num">9</span> test levels, <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span> runs per side, same model and code. Gap <span data-fact="collision.gap_points" data-fmt="num" data-dec="1" data-prefix="+">+26.7</span> points (<span data-fact="collision.ci_level" data-fmt="num" data-suffix="%">95%</span> range <span data-fact="collision.ci_low" data-fmt="num" data-dec="1" data-prefix="+">+13.3</span> to <span data-fact="collision.ci_high" data-fmt="num" data-dec="1" data-prefix="+">+40.4</span>, p &lt; <span data-fact="collision.p_below" data-fmt="num" data-dec="3">0.001</span>). Only L3 is significant on its own. <a href="#fine-print">Limits</a>.</p>
-      </figcaption>
-    </figure>
-
-    <!-- b -->
-    <figure class="chart reveal" id="chart-memory">
-      <div class="chart-head"><h3>A new session that needs something said earlier</h3></div>
-      <div class="rows" data-chart="memory" role="img" aria-label="Share of second sessions that finished the job, for no memory, a hand-kept notes file and the notebook"></div>
-      <div class="mini-grid">
-        <div>
-          <h4>Cost for each run that succeeded</h4>
-          <div class="rows slim" data-chart="memory-cost"></div>
-        </div>
-        <div>
-          <h4>By task, out of <span data-fact="memory.task_runs" data-fmt="num">10</span> (no memory &rarr; <span data-name></span>)</h4>
-          <ul class="ticks">
-            <li>Continue unfinished work <b><span data-fact="memory.task_continue.none" data-fmt="num">0</span> &rarr; <span data-fact="memory.task_continue.tool" data-fmt="num">10</span></b></li>
-            <li>A rule stated once (no sqlite) <b><span data-fact="memory.task_rule.none" data-fmt="num">0</span> &rarr; <span data-fact="memory.task_rule.tool" data-fmt="num">8</span></b> <small>a later re-check on the final code gave <span data-fact="memory.task_rule.recheck" data-fmt="num">10</span></small></li>
-            <li>A coding convention <b><span data-fact="memory.task_convention.none" data-fmt="num">8</span> &rarr; <span data-fact="memory.task_convention.tool" data-fmt="num">10</span></b></li>
-            <li>One useful rule among <span data-fact="memory.r6.irrelevant_rules" data-fmt="num">20</span> irrelevant ones <b><span data-fact="memory.r6.none" data-fmt="num">0</span> &rarr; <span data-fact="memory.r6.tool" data-fmt="num">10</span></b> <small>hand-kept notes file: <span data-fact="memory.r6.notes" data-fmt="num">9</span> of <span data-fact="memory.r6.runs" data-fmt="num">10</span></small></li>
-          </ul>
-        </div>
-      </div>
-      <figcaption>
-        <p class="take"><b>Plain words:</b> it matches a notes file that a person keeps perfectly up to date, with nothing for you to maintain, and costs less per success than doing without. Where nothing needs remembering it costs about <span data-fact="memory.irrelevant_cost_pct" data-fmt="num" data-suffix="%">7%</span> more per run, with the same results.</p>
-        <p class="foot"><b>How we measured:</b> a first session is told something once, then a second session that was not told must finish the job. <span data-fact="memory.runs_total" data-fmt="num">150</span> runs, <span data-fact="memory.setups" data-fmt="num">3</span> setups; four tasks that need the fact, <span data-fact="memory.pooled_runs_each" data-fmt="num">40</span> runs each. Two of those tasks are built so a session with no memory cannot know the fact, so its low score is partly by design. <a href="#fine-print">Limits</a>.</p>
-      </figcaption>
-    </figure>
-
-    <!-- c -->
-    <figure class="chart reveal" id="chart-cost">
-      <div class="chart-head"><h3>What it costs to run</h3></div>
-      <div class="mini-grid">
-        <div>
-          <h4>Total AI work, compared with no plugin (<span data-fact="cost.base_ratio" data-fmt="num" data-dec="2" data-suffix="x">1.00x</span>)</h4>
-          <div class="rows slim" data-chart="cost-ratio"></div>
-        </div>
-        <div>
-          <h4>Cost of each clean result (collision test)</h4>
-          <div class="rows slim" data-chart="cost-clean"></div>
-        </div>
-      </div>
-      <figcaption>
-        <p class="take"><b>Plain words:</b> the first version made helpers do <span data-fact="cost.first_version_pct" data-fmt="num" data-suffix="%" data-prefix="+">+31%</span> more work. The shipped version is at parity, and each clean result costs about <span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%">29%</span> less because fewer runs have to be redone. Each hook call takes about <span data-fact="cost.hook_seconds" data-fmt="num" data-dec="1">0.1</span> s, it never blocks a session if something fails, and there were <span data-fact="cost.hook_errors" data-fmt="num">0</span> hook errors across the evaluation runs.</p>
-        <p class="foot"><b>How we measured:</b> from recorded runs, list-price estimates. Cost per run alone was <span data-fact="collision.cost_run_with" data-fmt="usd" data-dec="4">$0.0090</span> with it vs <span data-fact="collision.cost_run_without" data-fmt="usd" data-dec="4">$0.0085</span> without (<span data-fact="collision.cost_run_diff_pct" data-fmt="num" data-prefix="+" data-suffix="%">+6%</span>, not significant). Turns were <span data-fact="cost.turns_ratio" data-fmt="num" data-dec="2" data-suffix="x">0.99x</span> of no plugin.</p>
-      </figcaption>
-    </figure>
-
-    <!-- d -->
-    <figure class="chart reveal" id="chart-together">
-      <div class="chart-head"><h3>"These files usually change together" hints</h3></div>
-      <div class="rows" data-chart="cochange" role="img" aria-label="How often the first-listed guess was right: notebook hint, same-folder guess, most-changed files"></div>
-      <figcaption>
-        <p class="take"><b>Plain words:</b> learned from your git history with no setup. When a hint is shown it is right about 2 times in 3 (<span data-fact="cochange.hit_pct" data-fmt="num" data-dec="1" data-suffix="%">66.5%</span> at the looser setting). The stricter shipped setting is right <span data-fact="cochange.strict_right_pct" data-fmt="num" data-suffix="%">73%</span> of the time and speaks up on <span data-fact="cochange.strict_shown_pct" data-fmt="num" data-suffix="%">17%</span> of edits.</p>
-        <p class="foot"><b>How we measured:</b> offline on <span data-fact="cochange.projects" data-fmt="num">6</span> real open-source Python projects, <span data-fact="cochange.cases" data-fmt="num">2,716</span> held-out cases; bars compare only the cases where a hint is shown. This measures prediction, not bugs avoided. Lookup takes <span data-fact="cochange.query_ms" data-fmt="num" data-dec="1">0.3</span> ms; the first index of <span data-fact="cochange.index_commits" data-fmt="num">800</span> commits takes <span data-fact="cochange.index_s_low" data-fmt="num" data-dec="1">0.2</span> to <span data-fact="cochange.index_s_high" data-fmt="num" data-dec="1">0.3</span> s.</p>
-      </figcaption>
-    </figure>
-
-    <div class="chips reveal">
-      <div class="chip"><span class="n"><span data-fact="tests.count" data-fmt="num" data-count>245</span></span><span>automatic tests, all passing</span></div>
-      <div class="chip"><span class="n"><span data-fact="cost.hook_errors" data-fmt="num">0</span></span><span>hook errors in the evaluation runs</span></div>
-      <div class="chip"><span class="n">Local</span><span>Your code and notes stay on your machine.</span></div>
+    <h2 class="h2c">Measured, not promised.</h2>
+    <div class="nums">
+      <div class="ncard reveal"><span class="nbig"><span data-fact="collision.with_pct" data-fmt="num" data-suffix="%" data-count>80%</span></span><p>of runs finish clean</p><small>was <span data-fact="collision.without_pct" data-fmt="num" data-suffix="%">53%</span></small></div>
+      <div class="ncard reveal d1"><span class="nbig"><span data-fact="memory.tool_pct" data-fmt="num" data-suffix="%" data-count>95%</span></span><p>the next helper already knows the job</p><small>was <span data-fact="memory.none_pct" data-fmt="num" data-suffix="%">45%</span></small></div>
+      <div class="ncard reveal d2"><span class="nbig"><span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%" data-count>29%</span><span class="less"> less</span></span><p>cost for every good result</p><small>list-price estimate</small></div>
     </div>
-
-    <div class="outside reveal">
-      <h3>What other researchers found <small>[from the papers' abstracts]</small></h3>
-      <ul>
-        <li>Changes by different AI helpers conflicted <b data-fact="research.conflict_other_pct" data-fmt="num" data-dec="1" data-suffix="%">41.7%</b> of the time, against <b data-fact="research.conflict_same_pct" data-fmt="num" data-dec="1" data-suffix="%">19.8%</b> for the same helper. Reported in a <span data-fact="research.year" data-fmt="plain">2026</span> study of <span data-fact="research.prs" data-fmt="num">33,596</span> pull requests (arXiv <span data-fact="research.arxiv_conflict" data-fmt="plain">2607.04697</span>).</li>
-        <li>When facts cannot be read from the code, memory lifts pass rates from about <span data-fact="research.memory_from_pct" data-fmt="num" data-suffix="%">12%</span> to about <span data-fact="research.memory_to_low_pct" data-fmt="num">45</span> to <span data-fact="research.memory_to_high_pct" data-fmt="num" data-suffix="%">54%</span>, reported in another study (arXiv <span data-fact="research.arxiv_memory" data-fmt="plain">2608.20664</span>).</li>
-        <li>On the other hand, only <span data-fact="research.real_pairs_broken" data-fmt="num">1</span> of <span data-fact="research.real_pairs" data-fmt="num">417</span> real merged pull-request pairs showed this kind of breakage (arXiv <span data-fact="research.arxiv_real" data-fmt="plain">2609.25396</span>). Real projects collide less often than our tests do.</li>
-      </ul>
-    </div>
+    <p class="nline">Measured in <span data-fact="proof.total_runs" data-fmt="num">330</span> test runs on tasks built to make helpers collide. <a data-results href="#">Full results</a></p>
   </div>
 </section>
 
-<!-- RESULTS WALL -->
-<section class="sec wall-sec" id="results">
-  <div class="wrap">
-    <div class="wall-head"><div><p class="eyebrow c2">Results wall</p><h2 class="h2l">Real runs, one result each.</h2></div>
-      <div class="arrows"><button type="button" class="ar" data-dir="-1" aria-label="Scroll left">&larr;</button><button type="button" class="ar" data-dir="1" aria-label="Scroll right">&rarr;</button></div></div>
-  </div>
-  <div class="wall" id="wall" tabindex="0" aria-label="Results, scrolls sideways">
-    <article class="rc"><small>Three helpers, one codebase</small><p class="rn"><span data-fact="collision.levels.2.without" data-fmt="num">0</span> of <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span> <i>&rarr;</i> <span data-fact="collision.levels.2.with" data-fmt="num">9</span> of <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span></p><p>clean runs when three sessions add discount, tax and a report to the same code.</p></article>
-    <article class="rc"><small>A rename while features land</small><p class="rn"><span data-fact="collision.levels.3.without" data-fmt="num">3</span> of <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span> <i>&rarr;</i> <span data-fact="collision.levels.3.with" data-fmt="num">7</span> of <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span></p><p>clean runs. Better, but not significant on its own.</p></article>
-    <article class="rc"><small>Unfinished work picked up</small><p class="rn"><span data-fact="memory.task_continue.none" data-fmt="num">0</span> of <span data-fact="memory.task_runs" data-fmt="num">10</span> <i>&rarr;</i> <span data-fact="memory.task_continue.tool" data-fmt="num">10</span> of <span data-fact="memory.task_runs" data-fmt="num">10</span></p><p>second sessions that finished the job, with no memory vs with it.</p></article>
-    <article class="rc"><small>A rule stated once</small><p class="rn"><span data-fact="memory.task_rule.none" data-fmt="num">0</span> of <span data-fact="memory.task_runs" data-fmt="num">10</span> <i>&rarr;</i> <span data-fact="memory.task_rule.tool" data-fmt="num">8</span> of <span data-fact="memory.task_runs" data-fmt="num">10</span></p><p>kept "no sqlite". A later re-check on the final code gave <span data-fact="memory.task_rule.recheck" data-fmt="num">10</span> of <span data-fact="memory.task_runs" data-fmt="num">10</span>.</p></article>
-    <article class="rc"><small>One rule among <span data-fact="memory.r6.irrelevant_rules" data-fmt="num">20</span> irrelevant ones</small><p class="rn"><span data-fact="memory.r6.none" data-fmt="num">0</span> of <span data-fact="memory.r6.runs" data-fmt="num">10</span> <i>&rarr;</i> <span data-fact="memory.r6.tool" data-fmt="num">10</span> of <span data-fact="memory.r6.runs" data-fmt="num">10</span></p><p>A hand-kept notes file got <span data-fact="memory.r6.notes" data-fmt="num">9</span> of <span data-fact="memory.r6.runs" data-fmt="num">10</span>.</p></article>
-    <article class="rc"><small>Taking back a wrong note</small><p class="rn">about <span data-fact="retract.ms" data-fmt="num">3</span> ms</p><p>to find exactly the notes built on it, on <span data-fact="retract.graphs" data-fmt="num">25</span> test graphs. A plain search found <span data-fact="retract.search_mixed_pct" data-fmt="num" data-suffix="%">65%</span> when sources are cited in mixed styles.</p></article>
-    <article class="rc"><small>Files that change together</small><p class="rn"><span data-fact="cochange.hit_pct" data-fmt="num" data-dec="1" data-suffix="%">66.5%</span> right</p><p>when a hint is shown, from git history alone, on <span data-fact="cochange.projects" data-fmt="num">6</span> real open-source projects.</p></article>
-    <article class="rc"><small>A second, stronger AI model</small><p class="rn"><span data-fact="second.without_clean" data-fmt="num">8</span> of <span data-fact="second.runs" data-fmt="num">24</span> <i>&rarr;</i> <span data-fact="second.with_clean" data-fmt="num">20</span> of <span data-fact="second.runs" data-fmt="num">24</span></p><p>clean runs (<span data-fact="second.without_pct" data-fmt="num" data-suffix="%">33%</span> to <span data-fact="second.with_pct" data-fmt="num" data-suffix="%">83%</span>) on three test levels. Each clean run cost <span data-fact="second.cost_clean_with" data-fmt="usd" data-dec="3">$0.115</span> instead of <span data-fact="second.cost_clean_without" data-fmt="usd" data-dec="3">$0.314</span> at list prices. Gap +<span data-fact="second.gap_points" data-fmt="num">50</span> points, <span data-fact="collision.ci_level" data-fmt="num" data-suffix="%">95%</span> range +<span data-fact="second.ci_low" data-fmt="num">25</span> to +<span data-fact="second.ci_high" data-fmt="num">72</span>.</p></article>
-    <article class="rc warn"><small>Not fixed yet</small><p class="rn"><span data-fact="collision.levels.4.with" data-fmt="num">1</span> of <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span></p><p>Two sessions both adding the same stock reservation (L6). The warning arrives too late for that overlap.</p></article>
-  </div>
-</section>
-
-<!-- 5. CALCULATOR -->
 <section class="sec" id="estimate">
   <div class="wrap">
-    <p class="eyebrow">Your estimate</p>
-    <h2>What could this mean for you?</h2>
-    <p class="sub">Move the sliders. This is an <b>estimate</b> built from our test results, not a promise.</p>
+    <h2 class="h2c">Your estimate.</h2>
     <div class="calc reveal">
-      <div class="calc-in">
-        <label>AI sessions per week <output id="o-sess"></output>
-          <input id="i-sess" type="range" min="5" max="200" step="5"></label>
-        <label>Average cost per session (dollars) <output id="o-cost"></output>
-          <input id="i-cost" type="range" min="0.05" max="5" step="0.05"></label>
-        <label>Share of your work where helpers collide <output id="o-share"></output>
-          <input id="i-share" type="range" min="0" max="100" step="5"></label>
-        <p class="tiny">Real projects collide less often than our tests, so the default of <span data-fact="calc.default_share_pct" data-fmt="num" data-suffix="%">20%</span> is deliberately modest.</p>
+      <div class="calc-row">
+        <label>Sessions a week <output id="o-sess"></output><input id="i-sess" type="range" min="5" max="200" step="5"></label>
+        <label>Cost per session <output id="o-cost"></output><input id="i-cost" type="range" min="0.05" max="5" step="0.05"></label>
+        <label>Work where helpers collide <output id="o-share"></output><input id="i-share" type="range" min="0" max="100" step="5"></label>
       </div>
-      <div class="calc-out" aria-live="polite">
-        <span class="badge">ESTIMATE</span>
-        <div class="res"><span class="n" id="r-points">-</span><span>more of your work finishes clean</span></div>
-        <div class="res"><span class="n" id="r-reruns">-</span><span>reruns avoided per month</span></div>
-        <div class="res"><span class="n" id="r-money">-</span><span>saved per month</span></div>
-      </div>
-      <div class="formula">
-        <h4>The formulas</h4>
-        <p>Sessions per month = sessions per week &times; <span data-fact="calc.weeks_per_month" data-fmt="num" data-dec="2">4.33</span> (<span data-fact="calc.weeks_per_year" data-fmt="num">52</span> weeks in <span data-fact="calc.months_per_year" data-fmt="num">12</span> months, an assumption).</p>
-        <p>Clean-finish improvement = collision share &times; <span data-fact="collision.gap_points" data-fmt="num" data-dec="1">26.7</span> points.</p>
-        <p>Reruns avoided per month = sessions per month &times; collision share &times; <span data-fact="collision.gap_points" data-fmt="num" data-dec="1">26.7</span>%.</p>
-        <p>Money saved per month = sessions per month &times; collision share &times; cost per session &times; <span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%">29%</span> (the cost-per-clean-run reduction, applied only to the collision share).</p>
-      </div>
+      <div class="calc-out" aria-live="polite"><span class="badge">ESTIMATE</span><span><b id="r-points">-</b> more finish clean</span><span><b id="r-reruns">-</b> reruns avoided a month</span><span><b id="r-money">-</b> saved a month</span></div>
+      <p class="tiny" title="Estimate formula">Formula: sessions a month = sessions a week &times; <span data-fact="calc.weeks_per_month" data-fmt="num" data-dec="2">4.33</span>; clean finishes +<span data-fact="collision.gap_points" data-fmt="num" data-dec="1">26.7</span> points on the collision share; saving <span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%">29%</span> on that share. Real projects collide less, so the default is modest.</p>
     </div>
   </div>
 </section>
 
-<!-- 7. HOW -->
-<section class="sec" id="how">
-  <div class="wrap">
-    <p class="eyebrow">How it works</p>
-    <h2>Three steps. You do none of them.</h2>
-    <div class="steps">
-      <div class="step reveal"><span class="num">1</span><h3>Helpers write to the notebook</h3><p>Small hooks in Claude Code note which files a session is in, what it changed and what you told it.</p></div>
-      <div class="step reveal d1"><span class="num">2</span><h3>It warns and remembers</h3><p>Before an edit, a session is told who else is there and what changed nearby. Changes and rules are kept.</p></div>
-      <div class="step reveal d2"><span class="num">3</span><h3>The next session starts informed</h3><p>When one ends, it leaves a handoff. The next one begins with the unfinished job and the rules.</p></div>
-    </div>
-
-    <details class="tech reveal">
-      <summary>For the technical reader</summary>
-      <div class="tech-in">
-        <h3>Why a graph (FalkorDB)</h3>
-        <p>Without the graph there is nothing to ask. The product answers questions like:</p>
-        <ul>
-          <li>Who holds a live lease on the file I am about to edit?</li>
-          <li>What was this note based on, and what breaks if it is wrong?</li>
-          <li>Which functions call the one I just changed, and who is working in those files?</li>
-          <li>Which files usually change together?</li>
-        </ul>
-        <svg class="dm" viewBox="0 0 780 300" role="img" aria-label="Data model: sessions, tasks, decisions, findings, files and symbols connected by relationships">
-          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="currentColor"/></marker></defs>
-          <g class="edges" marker-end="url(#ah)">
-            <path d="M120 50 L248 50"/><path d="M340 50 L468 50"/><path d="M295 70 L295 128"/><path d="M295 228 L295 172"/>
-            <path d="M120 250 L248 250"/><path d="M340 150 L468 150"/><path d="M590 150 L678 150"/><path d="M720 172 L720 228"/>
-          </g>
-          <g class="nodes">
-            <g><rect x="40" y="30" width="80" height="40" rx="10"/><text x="80" y="55">Actor</text></g>
-            <g><rect x="250" y="30" width="90" height="40" rx="10"/><text x="295" y="55">Decision</text></g>
-            <g><rect x="470" y="30" width="90" height="40" rx="10"/><text x="515" y="55">Finding</text></g>
-            <g><rect x="250" y="130" width="90" height="40" rx="10"/><text x="295" y="155">Artifact</text></g>
-            <g><rect x="470" y="130" width="120" height="40" rx="10"/><text x="530" y="155">Artifact</text></g>
-            <g><rect x="680" y="130" width="80" height="40" rx="10"/><text x="720" y="155">Symbol</text></g>
-            <g><rect x="680" y="230" width="80" height="40" rx="10"/><text x="720" y="255">Symbol</text></g>
-            <g><rect x="250" y="230" width="90" height="40" rx="10"/><text x="295" y="255">Task</text></g>
-            <g><rect x="40" y="230" width="80" height="40" rx="10"/><text x="80" y="255">Handoff</text></g>
-          </g>
-          <g class="lbl"><text x="184" y="42">DECIDED</text><text x="404" y="42">BASED_ON</text><text x="326" y="104">ABOUT</text><text x="330" y="206">TOUCHES</text><text x="184" y="242">INCLUDES</text><text x="404" y="142">CO_CHANGED</text><text x="634" y="142">DEFINES</text><text x="745" y="204">CALLS</text></g>
-        </svg>
-        <p class="tiny">Simplified. Full diagram, every property and the measured latencies are in <code>docs/FALKORDB-DEEP-DIVE.md</code>. Query times, tiny graph, one machine: files-that-change-together lookup <span data-fact="cochange.query_ms" data-fmt="num" data-dec="1">0.3</span> ms; retraction blast radius about <span data-fact="retract.ms" data-fmt="num">3</span> ms.</p>
-        <h4>Who is working in the file I am about to edit?</h4>
-<pre>MATCH (t:Task {status: 'claimed'})-[:TOUCHES]-&gt;(a:Artifact)
-WHERE a.path IN $paths AND t.owner &lt;&gt; $actor_id AND t.lease_until &gt;= $now
-RETURN t, a.path</pre>
-        <h4>What breaks if this note is wrong?</h4>
-<pre>MATCH (root:Finding {id: $id})&lt;-[:BASED_ON*1..]-(d:Decision)
-RETURN DISTINCT d</pre>
-        <h4>Which functions call the one I just changed?</h4>
-<pre>MATCH (c:Symbol)-[:CALLS]-&gt;(s:Symbol)
-WHERE s.path = $path AND s.qual IN $quals AND c.path &lt;&gt; $path
-RETURN s.qual, c.path, c.qual ORDER BY c.path</pre>
-        <h4>Which files usually change together?</h4>
-<pre>MATCH (a:Artifact {path: $path})-[r:CO_CHANGED]-&gt;(b:Artifact)
-WHERE r.n &gt;= $min_n AND r.ratio &gt;= $min_ratio
-RETURN b.path, r.n, r.ratio ORDER BY r.ratio DESC LIMIT $lim</pre>
-        <p class="tiny">When the store cannot be reached, the hooks print nothing and never block your session.</p>
-      </div>
-    </details>
-  </div>
-</section>
-
-<!-- TRY -->
 <section class="sec" id="try">
-  <div class="wrap narrow">
-    <p class="eyebrow c3">Try it in 2 minutes</p>
-    <h2 class="h2l">Run the demo on your machine.</h2>
-    <p class="sub">The demo plays out two sessions on a small shop project and prints what each one would be told.</p>
-    <div id="install"></div>
+  <div class="wrap">
+    <h2 class="h2c">Try it in 2 minutes.</h2>
+    <div class="steps3" id="steps"></div>
+    <p class="after" id="after"></p>
   </div>
 </section>
 
-<!-- FAQ -->
 <section class="sec" id="faq">
   <div class="wrap narrow">
-    <p class="eyebrow c4">Questions</p>
-    <h2 class="h2l">Straight answers.</h2>
+    <h2 class="h2c">Questions.</h2>
     <div class="faq">
-      <details><summary>Does it slow my sessions down?</summary><p>Each step takes about <span data-fact="cost.hook_seconds" data-fmt="num" data-dec="1">0.1</span> s, and it never blocks a session. Total AI work was <span data-fact="cost.turns_ratio" data-fmt="num" data-dec="2" data-suffix="x">0.99x</span> of no plugin in turns.</p></details>
-      <details><summary>Which tools does it work with?</summary><p>Claude Code today, through hooks, with an optional MCP server for explicit use. Tested with two Claude models; edits made through the Edit tools and through shell commands are both tracked. Nothing else is claimed.</p></details>
-      <details><summary>Where does my data go?</summary><p>Into a FalkorDB graph on your own machine. Nothing leaves it, and the board is read-only and local.</p></details>
-      <details><summary>What if the database is down?</summary><p>It stays out of the way: the hooks print nothing and your session carries on.</p></details>
-      <details><summary>Is it proven?</summary><p>Partly. We measured strong wins in constructed tests, on one small project with two models. Real projects collide less often than our tests. Read <a href="#fine-print">the fine print</a>.</p></details>
-      <details><summary>What does it cost?</summary><p>Nothing to run beyond FalkorDB. The AI work per run is about the same: <span data-fact="collision.cost_run_with" data-fmt="usd" data-dec="4">$0.0090</span> with it vs <span data-fact="collision.cost_run_without" data-fmt="usd" data-dec="4">$0.0085</span> without, which was not a significant difference.</p></details>
-    </div>
-  </div>
-</section>
-
-<!-- 9. FINE PRINT -->
-<section class="sec" id="fine-print">
-  <div class="wrap">
-    <p class="eyebrow">The fine print</p>
-    <h2>What this does not prove.</h2>
-    <p class="sub">The numbers above are real. Here is exactly how far they go.</p>
-    <div class="cards two">
-      <article class="card reveal"><h3>The collisions were built on purpose</h3><p>Our tests are made to make sessions collide. Real projects collide far less often, so this shows it helps <em>when</em> collisions happen, not how often they happen.</p></article>
-      <article class="card reveal d1"><h3>Small test, two models</h3><p>One small test project, two models (a cheap one and a stronger one; the stronger one was tested on <span data-fact="second.levels_count" data-fmt="num">3</span> levels, <span data-fact="second.runs_per_level" data-fmt="num">8</span> runs each), and the tasks and scoring were written by the same person. Some levels were used to tune earlier versions, and the pooled number mixes tuned and untuned levels. On the stronger model the first version did nothing, because that model edits files through shell commands, which the first version could not see. We fixed that and re-tested.</p></article>
-      <article class="card reveal"><h3>One test is still unsolved</h3><p>L6, where two sessions both add the same stock reservation, finished clean only <span data-fact="collision.levels.4.with" data-fmt="num">1</span> time in <span data-fact="collision.runs_per_level_side" data-fmt="num">10</span>. The warning arrives too late for that kind of overlap.</p></article>
-      <article class="card reveal d1"><h3>A notes file does about as well on memory</h3><p>A hand-kept notes file, kept perfectly, scored <span data-fact="memory.notes_pct" data-fmt="num" data-suffix="%">92%</span> against <span data-fact="memory.tool_pct" data-fmt="num" data-suffix="%">95%</span>. The difference is that nothing needs maintaining. And since two of the four tasks cannot be solved without a remembered fact, the no-memory score is low by design. We do not know how often real work needs one.</p></article>
-      <article class="card reveal"><h3>Not shown yet</h3><p>That the "callers that may now break" warning improves results (it fired <span data-fact="codegraph.fired" data-fmt="num">1</span> time in <span data-fact="codegraph.trials" data-fmt="num">40</span> trials), and that the files-that-change-together hints prevent bugs. They predict; they were not measured on bugs avoided.</p></article>
-      <article class="card reveal d1"><h3>The estimate is an estimate</h3><p>The calculator multiplies our test gap by your own inputs. It is a rough guide, and your real result may be smaller or zero.</p></article>
+      <details><summary>Do I have to change how I work?</summary><p>No. Start Claude Code with the plugin and carry on; it runs by itself.</p></details>
+      <details><summary>What happens when two helpers want the same file?</summary><p>The second one is told what the first one changed, before it edits.</p></details>
+      <details><summary>How does a new helper know what the last one learned?</summary><p>It starts with a short note: your rules and what changed. You can see it on the board.</p></details>
+      <details><summary>Will it get in my way?</summary><p>No. About a tenth of a second per step, and it steps aside if anything fails.</p></details>
+      <details><summary>Where does my data go?</summary><p>Nowhere. Notes live in a FalkorDB graph on your own machine.</p></details>
     </div>
   </div>
 </section>
 </main>
-
-<!-- CLOSER -->
-<section class="closer">
-  <div class="wrap">
-    <h2 class="closer-h">Less clashing. More remembering.</h2>
-    <div class="trio">
-      <div><b>Warns first.</b><span>Before the edit, not after.</span></div>
-      <div><b>Remembers why.</b><span>Changes, reasons and rules.</span></div>
-      <div><b>Stays out of the way.</b><span>Local, read-only, fails open.</span></div>
-    </div>
-  </div>
-</section>
 
 <footer class="foot-main">
   <div class="wrap foot-cols">
@@ -408,14 +157,12 @@ RETURN b.path, r.n, r.ratio ORDER BY r.ratio DESC LIMIT $lim</pre>
       <a class="brand" href="#top"><svg class="logo" aria-hidden="true"><use href="#mark"/></svg><span data-name></span></a>
       <p class="tiny" data-tagline></p>
     </div>
-    <div><h4>Product</h4><a href="#features">Features</a><a href="#numbers">Numbers</a><a href="#estimate">Estimate</a><a href="#try">Try it</a></div>
+    <div><h4>Page</h4><a href="#features">Features</a><a href="#numbers">Numbers</a><a href="#try">Try it</a><a href="#faq">FAQ</a></div>
     <div><h4>Project</h4><a data-repo href="#">Repo</a><a data-link="video" href="#">Video</a><a data-link="blog" href="#">Blog</a></div>
-    <div><h4>Read</h4><a href="#faq">FAQ</a><a href="#fine-print">Fine print</a></div>
   </div>
   <div class="wrap foot-note">
     <p>Built for the WeMakeDevs x FalkorDB Graph Hacks hackathon, Track 2 (Agent Memory and Coordination), on FalkorDB.</p>
     <p>This project was built with substantial help from an AI coding assistant.</p>
-    <p class="tiny" data-repo-note></p>
     <button class="theme-btn" id="theme" type="button">Switch theme</button>
   </div>
 </footer>

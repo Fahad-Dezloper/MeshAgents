@@ -7,14 +7,14 @@ window.CONFIG = {
   repoIsPlaceholder: false,
   video: "",
   blog: "",
-  heroCmd: "git clone {repo} {dir}",
+  heroCmd: "git clone {repo}",
   cli: "meshagents",
   dir: "meshagents",
-  /* install commands, copied from the README; {repo} {cli} {dir} are filled in */
-  install: [
-    { label: "1. Get it and run the demo (no model, no API key; needs Docker and Python 3.10+)",
-      cmd: "git clone {repo} {dir} && cd {dir}\ndocker compose up -d && python3 -m venv .venv && .venv/bin/pip install -e .\n.venv/bin/{cli} doctor && .venv/bin/python demo/run_demo.py" },
-    { label: "2. Open the live board", cmd: ".venv/bin/{cli} ui   # then open http://127.0.0.1:7777" },
-    { label: "3. Use it on your own project", cmd: "claude --plugin-dir /path/to/{dir}/plugin" }
-  ]
+  /* three steps; {repo} {cli} {dir} are filled in */
+  steps: [
+    { label: "Get it", cmd: "git clone {repo}" },
+    { label: "Check it", cmd: "{cli} doctor" },
+    { label: "Use it", cmd: "claude --plugin-dir ./plugin" }
+  ],
+  after: "Then run {cli} ui to watch your helpers live."
 };

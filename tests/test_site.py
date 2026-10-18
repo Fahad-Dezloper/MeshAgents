@@ -128,7 +128,7 @@ class SiteTests(unittest.TestCase):
             self.assertTrue(body["_src"].strip())
 
     def test_every_binding_resolves(self):
-        self.assertGreater(len(self.page.fact_paths), 50)
+        self.assertGreater(len(self.page.fact_paths), 15)
         for path in self.page.fact_paths:
             try:
                 v = resolve(self.facts, path)
@@ -180,6 +180,27 @@ class SiteTests(unittest.TestCase):
         m = self.facts["memory"]
         self.assertEqual(round(100 * m["tool_pass"] / m["pooled_runs_each"]), m["tool_pct"])
         self.assertEqual(round(100 * m["none_pass"] / m["pooled_runs_each"]), m["none_pct"])
+
+    def test_structure(self):
+        html = (SITE / "index.html").read_text()
+        # three number cards, four bento boxes, five FAQ items, one merged install section
+        self.assertEqual(html.count('class="ncard'), 3)
+        self.assertEqual(len(re.findall(r'<article class="bx ', html)), 4)
+        faq = html[html.index('id="faq"'):html.index("</section>", html.index('id="faq"'))]
+        self.assertEqual(faq.count("<details"), 5)
+        self.assertIn('id="try"', html)
+        self.assertIn('id="steps"', html)
+        cfg = (SITE / "config.js").read_text()
+        self.assertEqual(len(re.findall(r'label:\s*"', cfg)), 3)
+        # removed sections stay gone
+        for gone in ("fine-print", "closer", 'id="results"', "data-chart", 'id="how"', "chart-levels"):
+            self.assertNotIn(gone, html, gone)
+        # every referenced local asset exists and none is left unused
+        used = set(re.findall(r'assets/([\w.-]+)', html))
+        have = {p.name for p in (SITE / "assets").iterdir()}
+        self.assertEqual(used, have)
+        for name in have:
+            self.assertLess((SITE / "assets" / name).stat().st_size, 250_000, name)
 
 
 if __name__ == "__main__":
