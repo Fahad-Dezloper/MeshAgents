@@ -26,13 +26,36 @@ WORKSPACE = os.environ.get("MESHAGENTS_DEMO_WORKSPACE") or os.environ.get("BATON
 A, B, C = "sess-A-storage", "sess-B-endpoint", "sess-C-next-day"
 
 
+def _pace():
+    try:
+        return max(0.0, float(os.environ.get("MESHAGENTS_DEMO_PACE") or 0))
+    except ValueError:
+        return 0.0
+
+
+PACE = _pace()
+
+
+def print(*args, **kw):  # noqa: A001  same text as the builtin, flushed so a recording sees each line at once
+    import builtins
+    kw.setdefault("flush", True)
+    builtins.print(*args, **kw)
+
+
+def pause():
+    if PACE:
+        time.sleep(PACE)
+
+
 def say(title):
+    pause()
     print("\n=== %s ===" % title)
 
 
 def show(who, out):
     text = ((out or {}).get("hookSpecificOutput") or {}).get("additionalContext") or "(nothing to say)"
     print("[to %s]\n%s" % (who, text))
+    pause()
 
 
 def main():
