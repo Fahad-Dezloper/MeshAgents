@@ -22,3 +22,6 @@ baton-mcp = "baton.mcp_server.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+baton = ["ui/static/*.html"]
