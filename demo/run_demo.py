@@ -40,6 +40,13 @@ def main():
     shutil.copytree(os.path.join(ROOT, "evals", "clash", "fixture"), os.path.join(project, "p"))
     project = os.path.join(project, "p")
     os.environ["CLAUDE_PROJECT_DIR"] = project
+    # hooks remember which warnings a session already saw; forget them so every run of the demo shows them
+    from baton.hooks import events as _events
+    for sid in (A, B, C):
+        try:
+            os.remove(_events._warned_path(sid))
+        except OSError:
+            pass
     store = Store(WORKSPACE)
     store.drop()
     store = Store(WORKSPACE)
