@@ -51,6 +51,12 @@ window.FACTS = {
     "search_mixed_pct": 65, "search_paraphrase_pct": 0
   },
   "codegraph": {"_src": "docs/RESULTS.md (code-graph round)", "trials": 40, "fired": 1},
+  "second": {
+    "_src": "docs/RESULTS.md round 7, part 2 (second, stronger model; levels L3, L4, L9, 8 runs each, list prices)",
+    "runs": 24, "with_clean": 20, "without_clean": 8, "with_pct": 83, "without_pct": 33,
+    "gap_points": 50, "ci_low": 25, "ci_high": 72, "p": 0.001, "levels_count": 3, "runs_per_level": 8,
+    "cost_clean_with": 0.115, "cost_clean_without": 0.314, "models": 2
+  },
   "tests": {"_src": "automatic test suite (tests/), all passing", "count": 245},
   "research": {
     "_src": "[from the papers' abstracts] as summarised in docs/research/02-evidence-and-benchmarks.md; outside context, not our measurements",
