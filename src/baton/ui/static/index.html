@@ -22,14 +22,16 @@ h1 small{font-weight:400;color:var(--mute);margin-left:8px;font-size:13px}
 .count b{color:var(--ink);font-size:15px;margin-right:4px}
 .count.hot b{color:var(--bad)}
 main{padding:16px 20px 40px;max-width:1400px;margin:0 auto}
-.page{display:grid;gap:16px}
+.page{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.page>*,.card,.dec,.two>*,.pv-cols>*{min-width:0}
+@media (max-width:600px){main{padding:10px}header{padding:10px 12px}.counts{margin-left:0}}
 .banner{padding:10px 14px;border-radius:8px;background:var(--badbg);color:var(--bad);border:1px solid var(--bad)}
 section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
 section>h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);display:flex;gap:8px;align-items:baseline}
 section>h2 .hint{text-transform:none;letter-spacing:0;font-weight:400}
 .two{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
-@media (max-width:900px){.two{grid-template-columns:1fr}}
-.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr))}
 .card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--bg)}
 .card.live{border-left:4px solid var(--ok)}.card.expired{border-left:4px solid var(--warn)}.card.ended{opacity:.7}
 .card.clash{border-color:var(--bad);border-left:4px solid var(--bad)}
@@ -45,6 +47,7 @@ section>h2 .hint{text-transform:none;letter-spacing:0;font-weight:400}
 .chip.config,.chip.rename{background:var(--warnbg);color:var(--warn)}
 .file{display:inline-block;padding:0 6px;border-radius:5px;background:var(--idlebg);margin:1px 2px 1px 0;overflow-wrap:anywhere}
 .file.shared{background:var(--badbg);color:var(--bad)}
+section{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
 td,th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--mute);font-weight:600}
@@ -64,7 +67,7 @@ svg text{font:11px ui-monospace,Menlo,monospace;fill:var(--ink)}
 .n-ok{fill:var(--okbg);stroke:var(--ok)}.n-warn{fill:var(--warnbg);stroke:var(--warn)}.n-bad{fill:var(--badbg);stroke:var(--bad)}.n-idle{fill:var(--idlebg);stroke:var(--idle)}.n-info{fill:var(--infobg);stroke:var(--info)}
 .e{stroke:var(--mute);fill:none;opacity:.55}.e.based{stroke:var(--accent);opacity:.8}
 .legend{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0}
-.pv-cols{display:grid;gap:12px;grid-template-columns:1fr 1fr}@media (max-width:900px){.pv-cols{grid-template-columns:1fr}}
+.pv-cols{display:grid;gap:12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}@media (max-width:900px){.pv-cols{grid-template-columns:minmax(0,1fr)}}
 .preview{border:1px dashed var(--warn);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--warnbg)}
 </style>
 </head>
@@ -77,7 +80,7 @@ svg text{font:11px ui-monospace,Menlo,monospace;fill:var(--ink)}
 <main id="main"></main>
 <script>
 "use strict";
-var S = null, selected = (location.hash.match(/^#id=([\w-]{1,80})$/) || [])[1] || null, skew = 0, openChains = {}, why = null, errorCount = 0;
+var C = null, codeSel = null, S = null, selected = (location.hash.match(/^#id=([\w-]{1,80})$/) || [])[1] || null, skew = 0, openChains = {}, why = null, errorCount = 0;
 var $ = function (id) { return document.getElementById(id); };
 
 /* All text goes through textContent: data comes from other sessions and is untrusted. */
@@ -136,9 +139,11 @@ function render() {
   var empty = !S.sessions.length && !S.decisions.length && !S.findings.length;
   if (empty) { main.appendChild(emptyState()); swap(main, 0); return; }
   main.appendChild(tower());
+  main.appendChild(impactView());
   var two = h("div", { "class": "two" }, filesView(), feedView());
   main.appendChild(two);
   if (selected) main.appendChild(provenanceView());
+  main.appendChild(codeView());
   main.appendChild(graphView());
   swap(main, feedTop);
 }
@@ -331,7 +336,79 @@ function graphView() {
   return sec;
 }
 
+function impactView() {
+  var sec = h("section", {}, h("h2", {}, "Impact of recent changes", h("span", { "class": "hint" }, "callers of changed interfaces")));
+  var items = C && C.impact ? C.impact : [];
+  if (!items.length) {
+    sec.appendChild(h("div", { "class": "mute" }, C && C.counts.files ? "Nothing is affected: no open interface change has callers elsewhere."
+      : "Nothing is affected. (No code indexed yet; the hooks index Python files as sessions edit them.)"));
+    return sec;
+  }
+  items.forEach(function (it) {
+    var groups = {};
+    it.callers.forEach(function (c) { (groups[c.caller_file] = groups[c.caller_file] || { who: c.being_edited_by, uses: [] }).uses.push(c.caller + " calls " + c.symbol); });
+    sec.appendChild(h("div", { "class": "dec" },
+      h("div", { "class": "row" }, chip("interface"), h("code", { "class": "mute" }, it.author.slice(0, 12)), h("span", { "class": "mute" }, age(it.created_at)),
+        it.affected_live.length ? chip("live sessions affected", "bad") : null),
+      h("div", { "class": "txt" }, it.text),
+      Object.keys(groups).map(function (f) {
+        var g = groups[f];
+        return h("div", { "class": "chain" }, h("code", { "class": "file" + (g.who.length ? " shared" : "") }, f),
+          g.who.length ? chip("being edited by " + g.who.join(", "), "bad") : null,
+          h("div", { "class": "mute" }, g.uses.slice(0, 4).join("; ")));
+      })));
+  });
+  return sec;
+}
+
+function codeView() {
+  var sec = h("section", {});
+  var cn = C ? C.counts : { files: 0, symbols: 0, calls: 0 };
+  sec.appendChild(h("h2", {}, "Code map", h("span", { "class": "hint" }, cn.files + " files indexed \u00b7 " + cn.symbols + " symbols \u00b7 " + cn.calls + " calls" + (C && C.truncated ? " (map capped)" : ""))));
+  if (!C || !C.files.length) { sec.appendChild(h("div", { "class": "mute" }, "No code indexed yet. Python files are indexed when a session starts and re-indexed on every edit.")); return sec; }
+  var rank = {}, W = 210, H = 58, i, k;
+  C.files.forEach(function (f) { rank[f.path] = 0; });
+  for (k = 0; k < 6; k++) C.edges.forEach(function (e) { if (rank[e.to] < rank[e.from] + 1 && rank[e.from] < 5) rank[e.to] = rank[e.from] + 1; });
+  var cols = {}, maxR = 0, pos = {}, rows = 1;
+  C.files.forEach(function (f) { (cols[rank[f.path]] = cols[rank[f.path]] || []).push(f); maxR = Math.max(maxR, rank[f.path]); });
+  for (i = 0; i <= maxR; i++) (cols[i] || []).forEach(function (f, j) { pos[f.path] = { x: 10 + i * (W + 70), y: 10 + j * (H + 12) }; rows = Math.max(rows, (cols[i] || []).length); });
+  var svg = sv("svg", { width: 20 + (maxR + 1) * (W + 70) - 70, height: 20 + rows * (H + 12), role: "img", "aria-label": "code map" });
+  var defs = sv("defs"), mk = sv("marker", { id: "arr", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: "auto" });
+  mk.appendChild(sv("path", { d: "M0 0L10 5L0 10z", style: "fill:var(--mute)" })); defs.appendChild(mk); svg.appendChild(defs);
+  C.edges.forEach(function (e) {
+    var a = pos[e.from], b = pos[e.to]; if (!a || !b) return;
+    var fwd = a.x < b.x, x1 = fwd ? a.x + W : a.x, x2 = fwd ? b.x : b.x + W, y1 = a.y + H / 2, y2 = b.y + H / 2;
+    var d = a.x === b.x ? "M" + a.x + " " + y1 + " C" + (a.x - 40) + " " + y1 + " " + (a.x - 40) + " " + y2 + " " + a.x + " " + y2
+      : "M" + x1 + " " + y1 + " C" + (x1 + (fwd ? 35 : -35)) + " " + y1 + " " + (x2 + (fwd ? -35 : 35)) + " " + y2 + " " + x2 + " " + y2;
+    var p = sv("path", { "class": "e based", d: d, "stroke-width": Math.min(5, 1 + e.weight / 2), "marker-end": "url(#arr)" });
+    p.appendChild(sv("title", {}, e.from + " -> " + e.to + " (" + e.weight + " call" + (e.weight > 1 ? "s" : "") + ")"));
+    svg.appendChild(p);
+  });
+  C.files.forEach(function (f) {
+    var p = pos[f.path], g = sv("g", { style: "cursor:pointer" }), name = f.path.split("/").pop();
+    g.appendChild(sv("title", {}, f.path + "\n" + f.symbols.length + " symbols" + (f.live.length ? "\nbeing edited by " + f.live.join(", ") : "")));
+    g.appendChild(sv("rect", { x: p.x, y: p.y, width: W, height: H, rx: 8, "class": f.live.length ? "n-bad" : "n-info", "stroke-width": f.path === codeSel ? 3 : 1 }));
+    g.appendChild(sv("text", { x: p.x + 8, y: p.y + 17 }, clip(f.path, 27)));
+    g.appendChild(sv("text", { x: p.x + 8, y: p.y + 33, style: "opacity:.7" }, f.symbols.length + " sym" + (f.interface_decisions ? " \u00b7 iface\u25cf" : "")));
+    if (f.live.length) g.appendChild(sv("text", { x: p.x + 8, y: p.y + 49, style: "font-weight:700" }, "editing: " + clip(f.live.join(", "), 20)));
+    g.addEventListener("click", function () { codeSel = f.path; render(); });
+    svg.appendChild(g);
+  });
+  sec.appendChild(h("div", { "class": "mute" }, "Arrows go from caller to callee; thicker means more calls. Red: a live session is editing it. \u201ciface\u25cf\u201d: open interface decision. Click a file."));
+  sec.appendChild(h("div", { "class": "svgwrap" }, svg));
+  var f = C.files.filter(function (x) { return x.path === codeSel; })[0];
+  if (f) {
+    var uses = function (list) { return list.length ? list.map(function (c) { return h("div", { "class": "chain" }, h("code", { "class": "file" }, c.file), h("div", { "class": "mute" }, c.uses.join("; "))); }) : h("div", { "class": "mute" }, "none"); };
+    sec.appendChild(h("div", { "class": "pv-cols", style: "margin-top:10px" },
+      h("div", {}, h("b", {}, f.path), f.live.length ? [" ", chip("being edited by " + f.live.join(", "), "bad")] : null,
+        h("table", {}, f.symbols.map(function (x) { return h("tr", {}, h("td", {}, h("code", {}, x.sig || x.qual)), h("td", { "class": "mute" }, "line " + x.line)); }))),
+      h("div", {}, h("b", {}, "Called from"), uses(f.called_from), h("b", {}, "Calls into"), uses(f.calls_into))));
+  }
+  return sec;
+}
+
 function poll() {
+  fetch("/api/code", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) { C = j.counts ? j : null; }).catch(function () {});
   fetch("/api/state", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
     S = j; skew = j.now - Date.now() / 1000; errorCount = 0; render();
   }).catch(function (e) {

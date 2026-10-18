@@ -23,3 +23,15 @@ RETURN f.text AS root, f.status AS root_status, d.text AS derived, d.status AS d
 // 6. Latest handoff and what it includes
 MATCH (h:Handoff)-[:INCLUDES]->(x)
 RETURN h.id, labels(x)[0] AS kind, coalesce(x.text, x.path, x.goal) AS item;
+
+// 7. Code graph: who calls get_order (callers in other files)?
+MATCH (c:Symbol)-[:CALLS]->(s:Symbol {name: 'get_order'})
+RETURN c.path AS caller_file, c.qual AS caller, s.path AS callee_file;
+
+// 8. Which files call into shop/db.py, and how often?
+MATCH (c:Symbol)-[:CALLS]->(s:Symbol {path: 'shop/db.py'}) WHERE c.path <> s.path
+RETURN c.path AS caller_file, count(*) AS calls ORDER BY calls DESC;
+
+// 9. Symbols nothing calls (dead-code candidates; entry points show up here too)
+MATCH (s:Symbol) WHERE NOT ()-[:CALLS]->(s)
+RETURN s.path, s.qual, s.sig ORDER BY s.path;

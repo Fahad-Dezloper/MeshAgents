@@ -12,11 +12,12 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-from baton.core import decisions, provenance  # noqa: E402
+from baton.core import codegraph, decisions, provenance  # noqa: E402
 from baton.graph.client import Store  # noqa: E402
 from baton.hooks.config import Config  # noqa: E402
 from baton.hooks.events import HANDLERS  # noqa: E402
@@ -47,7 +48,7 @@ def main():
     db_path = os.path.join(project, "shop", "db.py")
     api_path = os.path.join(project, "shop", "api.py")
     original = open(db_path).read()
-    t = [1_000_000.0]
+    t = [time.time() - 600]  # real clock: leases are live when the dashboard is opened right after
 
     def fire(event, session, now_add=1.0, **payload):
         t[0] += now_add
@@ -86,7 +87,7 @@ def main():
     fire("stop", A, last_assistant_message="get_order now takes include_cancelled; db.py imports sqlite3 but "
                                           "save_order still writes the dict. Next: migrate save_order.")
     fire("session-end", A)
-    show(C, fire("session-start", C, now_add=3600))
+    show(C, fire("session-start", C, now_add=20))
 
     say("6. Provenance: a bad finding is retracted and its blast radius is found")
     f = provenance.add_finding(store, A, "Orders must survive restarts (per requirements v1)", source="requirements v1",
@@ -100,6 +101,20 @@ def main():
     for d in res["tainted"]:
         print("  - %s (%s)" % (d["text"], d["id"]))
     print("why(%s): %s" % (d2["id"], [x["text"] for x in provenance.why(store, d2["id"])["findings"]]))
+
+    say("7. Code graph: session A changes a call shape, baton names the callers")
+    print("indexed:", codegraph.index_project(store, project))
+    fire("post-tool", B, **{"tool_name": "Edit", "tool_input": {"file_path": api_path, "old_string": "x", "new_string": "y"},
+                            "tool_response": {"originalFile": open(api_path).read()}})
+    old = open(db_path).read()
+    newer = old.replace("def get_order(order_id):", "def get_order(order_id, tenant):")
+    with open(db_path, "w") as fh:
+        fh.write(newer)
+    out = fire("post-tool", A, **{"tool_name": "Edit",
+                                  "tool_input": {"file_path": db_path, "old_string": "def get_order(order_id):",
+                                                 "new_string": "def get_order(order_id, tenant):"},
+                                  "tool_response": {"originalFile": old}})
+    show(A, out)
 
     print("\nGraph left in FalkorDB as workspace '%s' (graph 'baton_%s')." % (WORKSPACE, WORKSPACE))
     print("Open http://localhost:3000 and run the queries in demo/queries.cypher.")

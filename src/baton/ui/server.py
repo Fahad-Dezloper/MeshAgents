@@ -47,6 +47,11 @@ class App:
             self._cache = (time.time(), body)
             return body
 
+    def code_json(self) -> bytes:
+        with self.lock:
+            body = json.dumps(state.code_state(self._store())).encode()
+        return body if len(body) <= MAX_BODY else json.dumps({"error": "too large"}).encode()
+
     def why_json(self, item_id: str) -> Optional[bytes]:
         with self.lock:
             try:
@@ -89,6 +94,8 @@ def make_handler(app: App, allowed_hosts: set):
                     return self._send(200, f.read(), "text/html; charset=utf-8")
             if u.path == "/api/state":
                 return self._send(200, app.state_json())
+            if u.path == "/api/code":
+                return self._send(200, app.code_json())
             if u.path == "/api/why":
                 ident = (parse_qs(u.query).get("id") or [""])[0]
                 if not ident or len(ident) > 80:

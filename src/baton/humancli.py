@@ -69,6 +69,11 @@ def cmd_status(argv, out: Out) -> int:
     now, c = st["now"], st["counts"]
     out.p(out.c("1", "baton") + " workspace %s: %d live session(s), %d open decision(s), %d tainted, %d handoff(s)"
           % (st["workspace"], c["live_sessions"], c["open_decisions"], c["tainted"], c["handoffs"]))
+    try:
+        cc = state.code_state(_store(a), base=st)["counts"]
+        out.p("code graph: %d file(s) indexed, %d symbol(s), %d call edge(s)" % (cc["files"], cc["symbols"], cc["calls"]))
+    except Exception:
+        pass
     sess = [s for s in st["sessions"] if s["is_session"]]
     if not sess and not st["decisions"]:
         out.p("\nNothing recorded yet. Start a session with the plugin: claude --plugin-dir /path/to/baton/plugin")
@@ -186,7 +191,37 @@ def _clean_multiline(text: object) -> str:
     return "\n".join(_clean(l) for l in str(text).split("\n"))
 
 
-COMMANDS = {"status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
+def cmd_impact(argv, out: Out) -> int:
+    p = _parser("impact", "Who calls the public symbols of a file, and which sessions are in those files.")
+    p.add_argument("path", help="file path relative to the project root")
+    a = p.parse_args(argv)
+    from baton.core.paths import normalize_path
+
+    path = normalize_path(a.path)
+    try:
+        r = state.impact_for_file(_store(a), path)
+    except Exception as e:
+        out.p("cannot read the graph: %s" % type(e).__name__)
+        return 1
+    out.p(out.c("1", path) + ": %d public symbol(s) indexed" % r["public_symbols"])
+    if r["sessions_here"]:
+        out.p("  sessions editing it now: " + ", ".join(_clean(x) for x in r["sessions_here"]))
+    if not r["public_symbols"]:
+        out.p("Nothing indexed for this file (Python only; indexing happens as sessions edit).")
+        return 0
+    if not r["callers"]:
+        out.p("No callers in other files.")
+        return 0
+    out.p("\nCallers elsewhere:")
+    for c in r["callers"]:
+        who = out.c("31", "  <- being edited by " + ", ".join(_clean(x) for x in c["sessions"])) if c["sessions"] else ""
+        out.p("  %s%s" % (_clean(c["file"]), who))
+        for u in c["uses"][:4]:
+            out.p("      " + _clean(u))
+    return 0
+
+
+COMMANDS = {"impact": cmd_impact, "status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
 
 
 def main(argv: List[str], stream: Optional[TextIO] = None) -> int:
