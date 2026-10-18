@@ -20,7 +20,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         from baton.ui.server import main as ui_main
 
         return ui_main(argv[1:])
-    if argv and argv[0] in ("status", "why", "retract", "handoff", "impact", "together"):
+    if argv and argv[0] in ("status", "why", "retract", "handoff", "impact", "together", "brief", "rules"):
         from baton.humancli import main as human_main
 
         return human_main(argv)

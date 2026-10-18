@@ -52,6 +52,18 @@ class App:
             body = json.dumps(state.code_state(self._store())).encode()
         return body if len(body) <= MAX_BODY else json.dumps({"error": "too large"}).encode()
 
+    def memory_json(self) -> bytes:
+        with self.lock:
+            return json.dumps(state.memory_state(self._store())).encode()
+
+    def together_json(self, path: str) -> bytes:
+        with self.lock:
+            try:
+                return json.dumps(state.together_view(self._store(), path)).encode()
+            except Exception as e:
+                return json.dumps({"path": path, "error": type(e).__name__, "total": 0, "hot": False,
+                                   "dep_files": 0, "partners": []}).encode()
+
     def why_json(self, item_id: str) -> Optional[bytes]:
         with self.lock:
             try:
@@ -96,6 +108,13 @@ def make_handler(app: App, allowed_hosts: set):
                 return self._send(200, app.state_json())
             if u.path == "/api/code":
                 return self._send(200, app.code_json())
+            if u.path == "/api/memory":
+                return self._send(200, app.memory_json())
+            if u.path == "/api/together":
+                p = (parse_qs(u.query).get("path") or [""])[0]
+                if not state.valid_path(p):
+                    return self._send(400, b'{"error":"bad path"}')
+                return self._send(200, app.together_json(p))
             if u.path == "/api/why":
                 ident = (parse_qs(u.query).get("id") or [""])[0]
                 if not ident or len(ident) > 80:

@@ -250,7 +250,45 @@ def cmd_together(argv, out: Out) -> int:
     return 0
 
 
-COMMANDS = {"together": cmd_together, "impact": cmd_impact, "status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
+def cmd_brief(argv, out: Out) -> int:
+    p = _parser("brief", "Print exactly what a new session would be told right now.")
+    a = p.parse_args(argv)
+    try:
+        m = state.memory_state(_store(a))
+    except Exception as e:
+        out.p("cannot read the graph: %s" % type(e).__name__)
+        return 1
+    if not m["connected"]:
+        out.p("cannot read the graph: " + m["error"])
+        return 1
+    if m["empty"]:
+        out.p("Nothing yet: after a session finishes, its notes appear here. A new session would be told nothing.")
+        return 0
+    out.p(_clean_multiline(m["text"]))
+    out.p("")
+    out.p(out.c("2", "about %d tokens (%d characters)" % (m["tokens"], m["chars"])))
+    return 0
+
+
+def cmd_rules(argv, out: Out) -> int:
+    p = _parser("rules", "Rules and facts captured from conversation (retract a wrong one with: baton retract <id>).")
+    a = p.parse_args(argv)
+    try:
+        rows = state.rules_list(_store(a))
+    except Exception as e:
+        out.p("cannot read the graph: %s" % type(e).__name__)
+        return 1
+    if not rows:
+        out.p("No rules captured yet. They are picked up from what people say in prompts, e.g. \"never use sqlite here\".")
+        return 0
+    now = time.time()
+    for r in rows:
+        col = {"open": "32", "retracted": "31"}.get(r["status"], "2")
+        out.p("%s  %s  %s  %s" % (_clean(r["id"]), out.c(col, "%-9s" % r["status"]), _age(r["created_at"], now), _clean(r["text"])))
+    return 0
+
+
+COMMANDS = {"brief": cmd_brief, "rules": cmd_rules, "together": cmd_together, "impact": cmd_impact, "status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
 
 
 def main(argv: List[str], stream: Optional[TextIO] = None) -> int:
