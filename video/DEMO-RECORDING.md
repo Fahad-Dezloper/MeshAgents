@@ -20,6 +20,10 @@
 
 Optional: the FalkorDB Browser at http://localhost:3000 (graph shown by `meshagents demo status`) shows the same notes as a graph.
 
+## Safety
+- Claude Code will ask permission before running commands. For this demo say **Yes** to edits and to running the tests.
+- If Claude ever offers to **install** something (a database, a package), say **No**, and carry on. The prompts are written so this should not happen, but it is a real AI, so watch the screen.
+
 ## If something fails
 - "FalkorDB is not running": run `docker compose up -d` in the repo, then `meshagents demo` again.
 - A helper answers oddly or the board looks wrong: run `meshagents demo reset` and start the steps again.
