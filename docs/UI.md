@@ -9,6 +9,9 @@ baton why <decision-or-finding-id>          # what it was based on, and what dep
 baton retract <id> --reason "..." [--yes]   # asks first; prints the decisions that became tainted
 baton handoff                               # latest handoff briefing
 baton impact <path>                         # callers of a file's public symbols, and who is in those files
+baton together <path>                       # files that usually change with it (git history)
+baton brief                                 # exactly what a new session would be told now, with a token estimate
+baton rules                                 # captured rules with ids (retract a wrong one: baton retract <id>)
 ```
 
 All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WORKSPACE` override it).
@@ -37,15 +40,24 @@ handoff. `#session/<id>` in the URL deep-links to a card.
 
 ## Other views (sidebar)
 
-- **Files**: files touched, with the sessions in each; shared files are flagged.
+- **Memory**: exactly what the next new session would be told right now, as cards: rules and facts people stated (who, when,
+  and the command to retract a wrong one), other sessions working, recent decisions, and the latest handoff including the
+  full request it was given. It shows "about N tokens" for the whole briefing. The Board shows a one-line version.
+  `/api/memory` mirrors `sessions.briefing` read-only (the real function marks the handoff as imported, a dashboard must not write);
+  a test pins the two texts together.
+- **Files**: files touched (click one to see what changes with it), with the sessions in each; shared files are flagged.
 - **Decisions**: newest first, filter All / Open / Tainted or retracted. "Provenance" draws the why-chain and blast
   radius and previews what a retraction would taint (read-only; retract from the terminal).
 - **Code**: impact of recent interface changes (callers elsewhere, flagged when a live session is in that file) and
-  the code map: files as nodes, caller to callee arrows weighted by call count. Click a file for its symbols and callers.
+  the code map: files as nodes, caller to callee arrows weighted by call count. Click a file for its symbols and callers, and a "Usually changes together with" panel: the files committed in the
+  same commits (n of N, with a bar) and a hot-spot note when many files depend on it (`/api/together?path=...`, path validated).
 - **Graph**: overview of tasks, files, decisions and findings (150 nodes max).
 
+![Memory, dark](img/ui-memory-dark.png)
+![Memory, light](img/ui-memory-light.png)
 ![Decisions](img/ui-decisions.png)
 ![Code](img/ui-code.png)
+![Together](img/ui-together.png)
 
 The page polls every 1.5 s and updates cards in place, so scroll position and an open panel stay put. If FalkorDB is
 down it shows a banner and keeps polling. It follows the system light/dark setting; the sidebar button overrides it.

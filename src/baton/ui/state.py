@@ -342,3 +342,138 @@ def impact_for_file(store: Store, path: str, base: Optional[dict] = None) -> dic
     return {"path": path, "public_symbols": int(own[0][0]) if own else 0,
             "callers": [{"file": f, "uses": sorted(set(u)), "sessions": live.get(f, [])} for f, u in groups.items()],
             "sessions_here": live.get(path, [])}
+
+
+# ---------------------------------------------------------------- memory preview and co-change (read-only)
+
+PREVIEW_ACTOR = "__preview__"
+
+
+def _tokens(chars: int) -> int:
+    return int(round(chars / 4.0))
+
+
+def memory_state(store: Store, now: Optional[float] = None) -> dict:
+    """What a brand new session would be told right now, split into its labelled parts.
+
+    Mirrors sessions.briefing (same queries, windows, limits and text) but never writes:
+    briefing() marks the handoff as imported, a dashboard must not. A test pins the two texts together.
+    """
+    from baton.core import handoff as ho
+    from baton.core import sessions as ss
+    from baton.core.safety import scrub
+    from baton.core.tasks import get_task
+
+    t = time.time() if now is None else now
+    out = {"now": t, "connected": True, "error": "", "empty": True, "text": "", "chars": 0, "tokens": 0,
+           "live": [], "rules": [], "decisions": [], "handoff": None}
+    actor = PREVIEW_ACTOR
+    try:
+        live = store.rows(
+            "MATCH (t:Task {status: 'claimed'}) WHERE t.owner <> $actor AND t.lease_until >= $now "
+            "AND NOT coalesce(t.auto_goal, false) "
+            "OPTIONAL MATCH (t)-[:TOUCHES]->(a:Artifact) "
+            "WITH t, collect(a.path)[..6] AS paths ORDER BY t.last_edit_at DESC LIMIT 5 RETURN t, paths",
+            {"actor": actor, "now": t}, read_only=True)
+        rules = store.rows(
+            "MATCH (d:Decision {kind: 'rule'}) WHERE d.status = 'open' AND d.author <> $actor "
+            "AND d.created_at >= $since RETURN d ORDER BY d.created_at DESC LIMIT 8",
+            {"actor": actor, "since": t - ss.RULE_WINDOW}, read_only=True)
+        decs = store.rows(
+            "MATCH (d:Decision) WHERE d.status IN ['open', 'tainted'] AND d.kind <> 'rule' AND d.author <> $actor "
+            "AND d.created_at >= $since "
+            "WITH d, CASE WHEN d.status = 'tainted' THEN 0 WHEN d.kind <> 'note' THEN 1 ELSE 2 END AS prio "
+            "ORDER BY prio, d.created_at DESC LIMIT 8 RETURN d",
+            {"actor": actor, "since": t - ss.BRIEFING_DECISION_WINDOW}, read_only=True)
+        last = store.rows(
+            "MATCH (h:Handoff) WHERE h.created_by <> $actor AND h.created_at >= $since "
+            "RETURN h ORDER BY h.created_at DESC LIMIT 1",
+            {"actor": actor, "since": t - ss.HANDOFF_WINDOW}, read_only=True)
+        packet = None
+        if last:
+            h = last[0][0]
+            task = get_task(store, h["task_id"])
+            inc = store.rows("MATCH (:Handoff {id: $id})-[:INCLUDES]->(x) RETURN labels(x)[0], x",
+                             {"id": h["id"]}, read_only=True)
+            packet = {
+                "id": h["id"], "task": task, "dependencies": [],
+                "artifacts": sorted(x["path"] for k, x in inc if k == "Artifact"),
+                "decisions": sorted((x for k, x in inc if k == "Decision"),
+                                    key=lambda d: (ho._priority(d), -d["created_at"])),
+                "findings": [x for k, x in inc if k == "Finding"], "omitted": 0, "note": h.get("note", "")}
+            packet["text"] = ho.render_packet(packet, 3000)
+    except Exception as e:
+        out.update(connected=False, error="%s: %s" % (type(e).__name__, str(e)[:160]))
+        return out
+
+    parts: List[str] = []
+    if live:
+        parts.append("Other sessions working now:")
+        for task, paths in live:
+            parts.append("- %s: %s%s" % (str(task["owner"])[:13], clip_goal(task["goal"], 160),
+                                         " (touching %s)" % ", ".join(paths) if paths else ""))
+            out["live"].append({"owner": _s(task["owner"], 80), "goal": clip_goal(_s(task["goal"]), 160),
+                                "files": [_s(p, 300) for p in paths]})
+    if rules:
+        seen: List[str] = []
+        for (d,) in rules:
+            if d["text"] not in seen:
+                seen.append(d["text"])
+                out["rules"].append({"id": _s(d.get("id"), 120), "text": scrub(d["text"], 240),
+                                     "author": _s(d.get("author"), 80), "created_at": _f(d.get("created_at")) or None})
+        parts.append("Rules and facts stated earlier by the user (not in the code):")
+        parts.extend("- %s" % scrub(x, 240) for x in seen)
+    if decs:
+        parts.append("Recent decisions by others:")
+        for (d,) in decs:
+            flag = " (TAINTED: based on a retracted source)" if d["status"] == "tainted" else ""
+            parts.append("- [%s]%s %s" % (d.get("kind", "note"), flag, scrub(d["text"], 200)))
+            out["decisions"].append({"id": _s(d.get("id"), 120), "kind": _s(d.get("kind") or "note", 20),
+                                     "status": _s(d.get("status"), 20), "text": scrub(d["text"], 200),
+                                     "author": _s(d.get("author"), 80), "created_at": _f(d.get("created_at")) or None})
+    if packet:
+        parts.append("Latest handoff from a previous session:")
+        parts.append(packet["text"])
+        task = packet["task"] or {}
+        spec = str(task.get("spec") or "")
+        goal = str(task.get("goal") or "")
+        out["handoff"] = {
+            "id": _s(packet["id"], 80), "created_by": _s(last[0][0].get("created_by"), 80),
+            "created_at": _f(last[0][0].get("created_at")) or None, "goal": clip_goal(goal, 220),
+            "spec": spec[:1800] if len(spec) > len(goal) + 20 else "", "note": _s(packet.get("note"), 400),
+            "files": [_s(p, 300) for p in packet["artifacts"]][:20], "decisions": len(packet["decisions"]),
+            "text": _s(packet["text"], 3000)}
+    if parts:
+        text = "[baton] Coordination context for this repository:\n" + "\n".join(parts)
+        if len(text) > ss.BRIEFING_MAX_CHARS:
+            text = text[: ss.BRIEFING_MAX_CHARS - 14] + "\n… truncated"
+        out.update(empty=False, text=text, chars=len(text), tokens=_tokens(len(text)))
+    return out
+
+
+def rules_list(store: Store) -> List[dict]:
+    rows = store.rows("MATCH (d:Decision {kind: 'rule'}) RETURN d ORDER BY d.created_at DESC LIMIT 100", read_only=True)
+    return [{"id": _s(d.get("id"), 120), "text": _s(d.get("text"), 400), "status": _s(d.get("status"), 20),
+             "author": _s(d.get("author"), 80), "created_at": _f(d.get("created_at")) or None} for (d,) in rows]
+
+
+_PATH_OK = None
+
+
+def valid_path(p: str) -> bool:
+    """A short, plain, relative path: no absolute paths, no '..', no odd characters."""
+    import re
+
+    global _PATH_OK
+    if _PATH_OK is None:
+        _PATH_OK = re.compile(r"^[\w.@+\- /]{1,200}$")
+    return bool(p) and bool(_PATH_OK.match(p)) and not p.startswith("/") and ".." not in p.split("/")
+
+
+def together_view(store: Store, path: str, limit: int = 10) -> dict:
+    """Files that usually change with `path` (git history) and whether many files depend on it."""
+    from baton.core import cochange
+
+    info = cochange.partners(store, path, min_n=2, min_ratio=0.3, limit=limit)
+    return {"path": path, "total": info["total"], "hot": info["hot"], "dep_files": info["dep_files"],
+            "partners": [{"path": _s(p, 300), "n": n, "ratio": round(r, 3)} for p, n, r in info["partners"][:limit]]}
