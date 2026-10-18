@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{width:1600px;height:900px;background:#0b0b0a;color:#f5f5f2;font-family:-apple-system,"SF Pro Display",Inter,"Helvetica Neue",Arial,sans-serif;padding:70px 90px}
+h2{font-size:54px;font-weight:600;letter-spacing:-1.5px;margin-bottom:10px}p.s{font-size:28px;color:#9a9f9c;margin-bottom:44px}
+.cols{display:flex;gap:70px}.col{flex:1}.t{font-size:30px;color:#cfd3d0;margin-bottom:26px;font-weight:600}
+.bar{display:flex;align-items:center;gap:20px;margin-bottom:20px}.lab{width:230px;font-size:26px;color:#aeb3b0}
+.track{flex:1;height:54px;background:#1a1a19;border-radius:14px;overflow:hidden}.fill{height:100%;border-radius:14px}
+.v{width:90px;font-size:34px;font-weight:700}
+.g{background:linear-gradient(90deg,#10b981,#34d399)}.w{background:#4b4f4d}.m{background:#6b7280}
+.foot{position:absolute;bottom:44px;left:90px;font-size:24px;color:#7d827f}
+</style><h2>What the tests showed</h2><p class="s">Real runs, fresh tests, same code. Limits are in the fine print.</p>
+<div class="cols">
+<div class="col"><div class="t">Runs that finished clean (collision test, 180 runs)</div>
+<div class="bar"><div class="lab">Without</div><div class="track"><div class="fill w" style="width:53%"></div></div><div class="v">53%</div></div>
+<div class="bar"><div class="lab">MeshAgents</div><div class="track"><div class="fill g" style="width:80%"></div></div><div class="v" style="color:#34d399">80%</div></div></div>
+<div class="col"><div class="t">New session finished its job (memory test, 150 runs)</div>
+<div class="bar"><div class="lab">No memory</div><div class="track"><div class="fill w" style="width:45%"></div></div><div class="v">45%</div></div>
+<div class="bar"><div class="lab">Notes file</div><div class="track"><div class="fill m" style="width:92%"></div></div><div class="v">92%</div></div>
+<div class="bar"><div class="lab">MeshAgents</div><div class="track"><div class="fill g" style="width:95%"></div></div><div class="v" style="color:#34d399">95%</div></div></div></div>
+<div style="margin-top:34px;font-size:34px;color:#cfd3d0">Cost per clean result: <b style="color:#34d399">29% lower</b> ($0.0113 vs $0.0159)</div>
+<div class="foot">Collision tests are built to make helpers collide; real projects will see fewer clashes.</div>
