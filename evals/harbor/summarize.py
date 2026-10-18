@@ -63,7 +63,7 @@ def trials(job_dir):
             "relay": bool(reward and "relay_pass" in reward),
             "scored": reward is not None,
             "failed_checks": (reward or {}).get("checks_failed"),
-            "types": [c.get("type") for c in check.get("clashes", [])],
+            "types": [c.get("type") for c in (check.get("clashes") or check.get("failures") or [])],
             "warnings": warnings,
             "hook_errors": errors,
         })
