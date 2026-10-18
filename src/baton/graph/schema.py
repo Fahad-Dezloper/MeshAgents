@@ -15,6 +15,7 @@ REL_TYPES = (
     "INCLUDES",     # Handoff -> Decision | Finding | Artifact | Task
     "DEFINES",      # Artifact -> Symbol
     "CALLS",        # Symbol -> Symbol
+    "CO_CHANGED",   # Artifact -> Artifact {n, ratio}, learned from git history
 )
 
 TASK_STATUSES = ("open", "claimed", "done", "released")
@@ -32,6 +33,7 @@ INDEX_STATEMENTS = (
     "CREATE INDEX FOR (h:Handoff) ON (h.id)",
     "CREATE INDEX FOR (s:Symbol) ON (s.id)",
     "CREATE INDEX FOR (s:Symbol) ON (s.path)",
+    "CREATE INDEX FOR (c:CoChangeIndex) ON (c.id)",
 )
 
 # Added once Phase 1.6 needs duplicate-ticket detection.

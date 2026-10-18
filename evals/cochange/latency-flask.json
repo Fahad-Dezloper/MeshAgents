@@ -1,0 +1,30 @@
+{
+ "repo": "flask",
+ "first_index_s": 0.3,
+ "first_index": {
+  "commits": 800,
+  "remaining": 0,
+  "status": "ok"
+ },
+ "noop_reindex_ms": 11.6,
+ "refresh_hot_first_ms": 1.7,
+ "refresh_hot_cached_ms": 0.2,
+ "edges_in_graph": 3992,
+ "edges_in_memory": 3992,
+ "top40_files_mismatching": 0,
+ "hint_for_ms_p50_p95": [
+  0.27,
+  0.31
+ ],
+ "files_with_hint_of_top30": 15,
+ "file_edited": ".github/workflows/tests.yaml",
+ "hook_process_ms_cochange_on_p50_p95": [
+  203,
+  439
+ ],
+ "hook_process_ms_cochange_off_p50_p95": [
+  180,
+  516
+ ],
+ "added_p50_ms": 22
+}

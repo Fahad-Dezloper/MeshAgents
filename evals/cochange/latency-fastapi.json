@@ -1,0 +1,30 @@
+{
+ "repo": "fastapi",
+ "first_index_s": 0.16,
+ "first_index": {
+  "commits": 800,
+  "remaining": 0,
+  "status": "ok"
+ },
+ "noop_reindex_ms": 15.5,
+ "refresh_hot_first_ms": 4.1,
+ "refresh_hot_cached_ms": 0.5,
+ "edges_in_graph": 3418,
+ "edges_in_memory": 3418,
+ "top40_files_mismatching": 0,
+ "hint_for_ms_p50_p95": [
+  0.33,
+  0.43
+ ],
+ "files_with_hint_of_top30": 22,
+ "file_edited": "fastapi/__init__.py",
+ "hook_process_ms_cochange_on_p50_p95": [
+  139,
+  188
+ ],
+ "hook_process_ms_cochange_off_p50_p95": [
+  149,
+  223
+ ],
+ "added_p50_ms": -10
+}

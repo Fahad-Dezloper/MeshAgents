@@ -221,7 +221,36 @@ def cmd_impact(argv, out: Out) -> int:
     return 0
 
 
-COMMANDS = {"impact": cmd_impact, "status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
+def cmd_together(argv, out: Out) -> int:
+    p = _parser("together", "Files that usually change together with a file, learned from git history.")
+    p.add_argument("path", help="file path relative to the project root")
+    p.add_argument("--min-n", type=int, default=2, help="least commits together (default 2)")
+    p.add_argument("--min-ratio", type=float, default=0.3, help="least share of the file's commits (default 0.3)")
+    a = p.parse_args(argv)
+    from baton.core import cochange
+    from baton.core.paths import normalize_path
+
+    path = normalize_path(a.path)
+    try:
+        r = cochange.partners(_store(a), path, a.min_n, a.min_ratio, limit=15)
+    except Exception as e:
+        out.p("cannot read the graph: %s" % type(e).__name__)
+        return 1
+    out.p(out.c("1", path) + ": changed in %d indexed commit(s)" % r["total"])
+    if not r["total"]:
+        out.p("No history indexed for this file (index builds at session start from `git log`).")
+        return 0
+    if r["hot"]:
+        out.p("  %d other files depend on it (top 10%% by PageRank)" % r["dep_files"])
+    if not r["partners"]:
+        out.p("No partner changes with it often enough.")
+        return 0
+    for f, n, ratio in r["partners"]:
+        out.p("  %-50s %d of %d commits (%d%%)" % (_clean(f), n, r["total"], round(ratio * 100)))
+    return 0
+
+
+COMMANDS = {"together": cmd_together, "impact": cmd_impact, "status": cmd_status, "why": cmd_why, "retract": cmd_retract, "handoff": cmd_handoff}
 
 
 def main(argv: List[str], stream: Optional[TextIO] = None) -> int:
