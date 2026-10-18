@@ -2,7 +2,7 @@
    Empty video/blog links render as "coming soon". */
 window.CONFIG = {
   name: "MeshAgents",
-  tagline: "A shared memory for AI coding helpers.",
+  tagline: "A shared memory for AI coding agents.",
   repo: "https://github.com/Fahad-Dezloper/MeshAgents",
   repoIsPlaceholder: false,
   video: "",
@@ -16,5 +16,5 @@ window.CONFIG = {
     { label: "Check it", cmd: "{cli} doctor" },
     { label: "Use it", cmd: "claude --plugin-dir ./plugin" }
   ],
-  after: "Then run {cli} ui to watch your helpers live."
+  after: "Then run {cli} ui to watch your agents live."
 };

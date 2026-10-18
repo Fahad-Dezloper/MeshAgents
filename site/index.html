@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A shared memory for AI coding helpers</title>
-<meta name="description" content="A shared notebook for AI coding helpers working on the same project. They warn each other before clashing, remember what changed and why, and hand notes to the next session.">
+<title>A shared memory for AI coding agents</title>
+<meta name="description" content="A shared notebook for AI coding agents working on the same project. They warn each other before clashing, remember what changed and why, and hand notes to the next session.">
 <meta name="color-scheme" content="dark light">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0b0a'/%3E%3Cpath d='M9 22 16 9l7 13M9 22h14' fill='none' stroke='%235eead4' stroke-width='2'/%3E%3Ccircle cx='9' cy='22' r='3' fill='%235eead4'/%3E%3Ccircle cx='16' cy='9' r='3' fill='%235eead4'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%235eead4'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
@@ -38,8 +38,8 @@
 <main id="main">
 <section class="hero" id="top">
   <div class="wrap center">
-    <h1>Stop AI helpers from<br>stepping on each other.</h1>
-    <p class="hero-sub">A shared memory for coding helpers on one project.</p>
+    <h1>Stop AI agents from<br>breaking each other’s work.</h1>
+    <p class="hero-sub">One shared memory, so your coding agents stay in sync.</p>
     <div class="cta">
       <a class="pill white" href="#features">See it work</a>
       <a class="pill line" data-repo href="#"><svg class="ic" aria-hidden="true"><use href="#gh"/></svg>GitHub</a>
@@ -51,7 +51,7 @@
     <div class="stage">
       <div class="win hero-win">
         <div class="win-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>live board</span></div>
-        <img src="assets/hero.webp" alt="The live board: three helpers, a warning badge, and the live feed" width="2560" height="1600">
+        <img src="assets/hero.webp" alt="The live board: three agents, a warning badge, and the live feed" width="2560" height="1600">
       </div>
     </div>
   </div>
@@ -80,22 +80,22 @@
     <h2 class="h2c">Four things, all automatic.</h2>
     <div class="bento">
       <article class="bx b1 reveal">
-        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-warn"/></svg><h3>Warns before a clash</h3><p>The second helper hears it first.</p></div>
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-warn"/></svg><h3>Warns before a clash</h3><p>The second agent hears it first.</p></div>
         <div class="bx-v split">
-          <div class="mock"><p><b>[<span data-name></span>] Possible collision on shop/db.py:</b> another helper is working in it now.</p><p><em>Callers elsewhere that may now break:</em></p><p class="ind">- shop/api.py</p></div>
-          <div class="shotframe"><img loading="lazy" src="assets/card.webp" alt="A helper card with a warning badge and Told 1 heads-up" width="594" height="1017"></div>
+          <div class="mock"><p><b>[<span data-name></span>] Possible collision on shop/db.py:</b> another agent is working in it now.</p><p><em>Callers elsewhere that may now break:</em></p><p class="ind">- shop/api.py</p></div>
+          <div class="shotframe"><img loading="lazy" src="assets/card.webp" alt="An agent card with a warning badge and Told 1 heads-up" width="594" height="1017"></div>
         </div>
       </article>
       <article class="bx b2 reveal d1">
         <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-mem"/></svg><h3>Remembers what changed</h3><p>Every change is noted, with its reason.</p></div>
-        <div class="bx-v"><div class="shotframe"><img loading="lazy" src="assets/nextc.webp" alt="The next-helper view: who else is busy and what changed recently" width="1200" height="860"></div></div>
+        <div class="bx-v"><div class="shotframe"><img loading="lazy" src="assets/nextc.webp" alt="The next-agent view: who else is busy and what changed recently" width="1200" height="860"></div></div>
       </article>
       <article class="bx b3 reveal">
-        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-hand"/></svg><h3>Hands over to the next helper</h3><p>It starts with your rules and notes.</p></div>
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-hand"/></svg><h3>Hands over to the next agent</h3><p>It starts with your rules and notes.</p></div>
         <div class="bx-v fade"><div class="shotframe narrowf"><img loading="lazy" src="assets/feed.webp" alt="The live feed with heads-up lines" width="624" height="1144"></div></div>
       </article>
       <article class="bx b4 reveal d1">
-        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-live"/></svg><h3>Shows it live</h3><p>See every helper at a glance.</p></div>
+        <div class="bx-t"><svg class="bi" aria-hidden="true"><use href="#i-live"/></svg><h3>Shows it live</h3><p>See every agent at a glance.</p></div>
         <div class="bx-v"><div class="shotframe"><img loading="lazy" src="assets/boardc.webp" alt="The board with working, needs-a-look and finished columns and the live feed" width="1980" height="1040"></div></div>
       </article>
     </div>
@@ -107,10 +107,10 @@
     <h2 class="h2c">Measured, not promised.</h2>
     <div class="nums">
       <div class="ncard reveal"><span class="nbig"><span data-fact="collision.with_pct" data-fmt="num" data-suffix="%" data-count>80%</span></span><p>of runs finish clean</p><small>was <span data-fact="collision.without_pct" data-fmt="num" data-suffix="%">53%</span></small></div>
-      <div class="ncard reveal d1"><span class="nbig"><span data-fact="memory.tool_pct" data-fmt="num" data-suffix="%" data-count>95%</span></span><p>the next helper already knows the job</p><small>was <span data-fact="memory.none_pct" data-fmt="num" data-suffix="%">45%</span></small></div>
+      <div class="ncard reveal d1"><span class="nbig"><span data-fact="memory.tool_pct" data-fmt="num" data-suffix="%" data-count>95%</span></span><p>the next agent already knows the job</p><small>was <span data-fact="memory.none_pct" data-fmt="num" data-suffix="%">45%</span></small></div>
       <div class="ncard reveal d2"><span class="nbig"><span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%" data-count>29%</span><span class="less"> less</span></span><p>cost for every good result</p><small>list-price estimate</small></div>
     </div>
-    <p class="nline">Measured in <span data-fact="proof.total_runs" data-fmt="num">330</span> test runs on tasks built to make helpers collide. <a data-results href="#">Full results</a></p>
+    <p class="nline">Measured in <span data-fact="proof.total_runs" data-fmt="num">330</span> test runs on tasks built to make agents collide. <a data-results href="#">Full results</a></p>
   </div>
 </section>
 
@@ -121,7 +121,7 @@
       <div class="calc-row">
         <label>Sessions a week <output id="o-sess"></output><input id="i-sess" type="range" min="5" max="200" step="5"></label>
         <label>Cost per session <output id="o-cost"></output><input id="i-cost" type="range" min="0.05" max="5" step="0.05"></label>
-        <label>Work where helpers collide <output id="o-share"></output><input id="i-share" type="range" min="0" max="100" step="5"></label>
+        <label>Work where agents collide <output id="o-share"></output><input id="i-share" type="range" min="0" max="100" step="5"></label>
       </div>
       <div class="calc-out" aria-live="polite"><span class="badge">ESTIMATE</span><span><b id="r-points">-</b> more finish clean</span><span><b id="r-reruns">-</b> reruns avoided a month</span><span><b id="r-money">-</b> saved a month</span></div>
       <p class="tiny" title="Estimate formula">Formula: sessions a month = sessions a week &times; <span data-fact="calc.weeks_per_month" data-fmt="num" data-dec="2">4.33</span>; clean finishes +<span data-fact="collision.gap_points" data-fmt="num" data-dec="1">26.7</span> points on the collision share; saving <span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%">29%</span> on that share. Real projects collide less, so the default is modest.</p>
@@ -142,8 +142,8 @@
     <h2 class="h2c">Questions.</h2>
     <div class="faq">
       <details><summary>Do I have to change how I work?</summary><p>No. Start Claude Code with the plugin and carry on; it runs by itself.</p></details>
-      <details><summary>What happens when two helpers want the same file?</summary><p>The second one is told what the first one changed, before it edits.</p></details>
-      <details><summary>How does a new helper know what the last one learned?</summary><p>It starts with a short note: your rules and what changed. You can see it on the board.</p></details>
+      <details><summary>What happens when two agents want the same file?</summary><p>The second one is told what the first one changed, before it edits.</p></details>
+      <details><summary>How does a new agent know what the last one learned?</summary><p>It starts with a short note: your rules and what changed. You can see it on the board.</p></details>
       <details><summary>Will it get in my way?</summary><p>No. About a tenth of a second per step, and it steps aside if anything fails.</p></details>
       <details><summary>Where does my data go?</summary><p>Nowhere. Notes live in a FalkorDB graph on your own machine.</p></details>
     </div>
