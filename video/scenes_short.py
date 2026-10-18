@@ -11,12 +11,17 @@ class FT:
     def e(self, k, off=0.0): return self.c[k] + off
 
 
+def s_graph(c, t):
+    B.GRAPH_SHORT = True
+    B.scene_graph(c, t * 1.75, FT(f1=0.0, f2=1.8, f3=5.4, f4=8.6, f5=14.0))
+
+
 def s_hook(c, t):
     scene_hook(c, t * 1.25, FT(h2=1.6), "Two AI helpers.")
 
 
 def s_clash(c, t):
-    w = 1.25; tw_ = t * w; T = FT(c1=0.0, c2=1.8, c3=3.2, c4=999, c5=999)
+    w = 1.5; tw_ = t * w; T = FT(c1=0.0, c2=1.8, c3=3.2, c4=999, c5=999)
     sx, sy = shake(tw_, T.t("c3", 1.95))
     with c.push(1, 0, 0, 1.0, dx=sx, dy=sy):
         clash_day1(c, tw_, T)
@@ -27,10 +32,11 @@ def s_clash(c, t):
 
 
 def s_day2(c, t):
-    clash_day2(c, t * 1.15, FT(c4=-0.6, c5=-0.7), 0.0)
+    clash_day2(c, t * 1.4, FT(c4=-0.6, c5=-0.7), 0.0)
 
 
 def s_mesh(c, t):
+    t = t * 1.25
     hub = (960, 600)
     orbit = [("File", GREEN), ("Decision", PURPLE), ("Task", LBLUE), ("Function", PINK), ("File", GREEN), ("Decision", PURPLE)]
     ka = prog(t, 0.6, 0.4)
@@ -104,4 +110,4 @@ def s_end(c, t):
         c.text(960, 890, "WeMakeDevs x FalkorDB Graph Hacks, Track 2", 38, MUTED, "m", anchor="m")
 
 
-SEGS = [(0.0, 5.0, s_hook), (5.0, 17.0, s_clash), (17.0, 25.0, s_day2), (25.0, 33.0, s_mesh), (33.0, 50.0, s_stats), (50.0, 57.5, s_end)]
+SEGS = [(0.0, 5.0, s_hook), (5.0, 15.0, s_clash), (15.0, 22.0, s_day2), (22.0, 28.0, s_mesh), (28.0, 37.0, s_graph), (37.0, 51.0, s_stats), (51.0, 58.5, s_end)]

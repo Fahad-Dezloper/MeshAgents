@@ -279,6 +279,9 @@ def edge_pts(a, b, side):
     return (ax, ay + s * NH / 2 + s * 8), (bx, by - s * NH / 2 - s * 8)
 
 
+GRAPH_SHORT = False
+
+
 def scene_graph(c, t, T):
     f1, f2, f3, f4, f5 = [T.t(k) for k in ("f1", "f2", "f3", "f4", "f5")]
     q1 = win(t, f2 + 1.9, f3 - 0.3)
@@ -291,10 +294,11 @@ def scene_graph(c, t, T):
     red = {"n0": e_out(prog(t, f4 + 3.0, 0.35)), "n1": e_out(prog(t, f4 + 3.7, 0.35)), "n2": e_out(prog(t, f4 + 4.4, 0.35)),
            "e8": e_out(prog(t, f4 + 3.5, 0.35)), "e7": e_out(prog(t, f4 + 4.2, 0.35))}
     red = {k: v * (1 - e_io(fin)) for k, v in red.items()}
-    gscale = 1 - 0.32 * e_io(fin)
+    short = GRAPH_SHORT
+    gscale = 1 if short else 1 - 0.32 * e_io(fin)
 
     def title(text, t0, t1, col=WHITE, size=68):
-        k = win(t, t0, t1, 0.35)
+        k = win(t, t0 + 0.1, t1 - 0.3, 0.3)
         with c.push(1, 0, 0, k, dy=(1 - k) * 16):
             c.text(960, 100, text, size, col, "b", anchor="m")
     title("Your helpers' notes live in a graph", 0.2, f2 + 0.2, WHITE, 64)
@@ -303,12 +307,16 @@ def scene_graph(c, t, T):
     title("What was this note based on?", f4 - 0.05, f4 + 2.7)
     title("A note was wrong? See everything built on it.", f4 + 2.8, f5 - 0.1, RED, 64)
     k = e_out(prog(t, f5 + 0.0, 0.6))
+    if short:
+        kt = e_out(prog(t, 0.4, 0.4))
+        with c.push(1, 0, 0, kt):
+            pill(c, 1730, 52, "Built on FalkorDB", 34, BG, GREEN, padx=26, h=56, anchor="m")
     with c.push(1, 0, 0, k, dy=(1 - k) * 16):
         c.text(940, 100, "Built on", 64, MUTED, "m", anchor="r")
         c.text(970, 100, "FalkorDB", 80, GREEN, "h", anchor="l")
 
     with c.push(gscale, 960, 100):
-        with c.push(1, 0, 0, 1.0, dx=125 * e_io(fin)):
+        with c.push(1, 0, 0, 1.0, dx=0 if short else 125 * e_io(fin)):
             for n_, (eid, a, b, lab, side) in enumerate(EDGES):
                 p0, p1 = edge_pts(a, b, side)
                 ke = prog(t, 0.6 + n_ * 0.15, 0.7)
@@ -349,10 +357,11 @@ def scene_graph(c, t, T):
                     c.text(x, y, lab, 34, WHITE, "m", anchor="m", alpha=dim)
             if q1 > 0.02:
                 with c.push(1, 0, 0, q1):
-                    pill(c, 340 + 20, 510 - 62, "working now", 28, BG, GREEN, padx=16, h=40, anchor="m")
+                    pill(c, 340 + 20, 510 - 62, "A is working here" if short else "working now", 28, BG, GREEN, padx=16, h=40, anchor="m")
             if q2 > 0.02:
                 with c.push(1, 0, 0, q2):
-                    pill(c, 1240 + 40, 730 + 62, "may break", 28, BG, ORANGE, padx=16, h=40, anchor="m")
+                    pill(c, 1240 + 40, 730 + 62, "callers: shop/api.py" if short else "may break", 28, BG, ORANGE, padx=16, h=40, anchor="m")
+                    if short: pill(c, 340 + 20, 730 + 62, "B is working here", 28, BG, LBLUE, padx=16, h=40, anchor="m")
         kl = win(t, 1.8, f2 + 0.2, 0.4)
         if kl > 0.01:
             xx = 250
@@ -378,7 +387,7 @@ def scene_graph(c, t, T):
     chips = [("1 query", "claims a task atomically", f5 + 0.5),
              ("about 3 ms", "to find everything built on a wrong note (25 of 25 test graphs)", T.t("f5", 1.9)),
              ("Git history", "shows which files usually change together", T.t("f5", 5.6))]
-    for i, (big, small, t0) in enumerate(chips):
+    for i, (big, small, t0) in enumerate([] if short else chips):
         k = prog(t, t0, 0.6)
         cw = 580; x = 60 + i * (cw + 40); y = 600
         with c.push(0.94 + 0.06 * e_back(k), x + cw / 2, y + 120, e_out(min(1, k * 1.6)), dy=(1 - e_out(k)) * 30):
