@@ -119,15 +119,14 @@
     <h2 class="h2c">Your estimate.</h2>
     <div class="calc reveal">
       <div class="calc-row">
-        <label>Sessions a week <output id="o-sess"></output><input id="i-sess" type="range" min="5" max="200" step="5"></label>
-        <label>Cost per session <output id="o-cost"></output><input id="i-cost" type="range" min="0.05" max="5" step="0.05"></label>
-        <label>Work where agents collide <output id="o-share"></output><input id="i-share" type="range" min="0" max="100" step="5"></label>
+        <label>Agent sessions per week <output id="o-sess"></output><input id="i-sess" type="range" min="5" max="200" step="5"></label>
+        <label>Cost of one session <output id="o-cost"></output><input id="i-cost" type="range" min="0.05" max="5" step="0.05"></label>
       </div>
       <div class="calc-out" aria-live="polite">
-        <div class="co-main"><span class="badge">ESTIMATE</span><b id="r-money" class="co-big">-</b><span class="co-lbl">saved a month</span></div>
-        <div class="co-side"><div><b id="r-points">-</b><span>more finish clean</span></div><div><b id="r-reruns">-</b><span>reruns avoided a month</span></div></div>
+        <div class="co-main"><span class="badge">ESTIMATE</span><b id="r-money" class="co-big">-</b><span class="co-lbl">saved every month</span></div>
+        <div class="co-side"><div><b id="r-reruns">-</b><span>failed sessions you won't have to redo</span></div></div>
       </div>
-      <p class="tiny" title="Estimate formula">Formula: sessions a month = sessions a week &times; <span data-fact="calc.weeks_per_month" data-fmt="num" data-dec="2">4.33</span>; clean finishes +<span data-fact="collision.gap_points" data-fmt="num" data-dec="1">26.7</span> points on the collision share; saving <span data-fact="collision.cost_clean_drop_pct" data-fmt="num" data-suffix="%">29%</span> on that share. Real projects collide less, so the default is modest.</p>
+      <p class="tiny">Based on our test results, assuming one in five sessions has agents working on the same files (real projects may see fewer). It is an estimate, not a promise.</p>
     </div>
   </div>
 </section>

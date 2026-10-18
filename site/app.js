@@ -113,20 +113,19 @@
 
   /* ---------- calculator ---------- */
   var cf = F.calc, g = F.collision;
-  var iS = $("#i-sess"), iC = $("#i-cost"), iP = $("#i-share");
+  var iS = $("#i-sess"), iC = $("#i-cost");
   if (iS && cf && g) {
-    iS.value = cf.default_sessions; iC.value = cf.default_cost; iP.value = cf.default_share_pct;
+    iS.value = cf.default_sessions; iC.value = cf.default_cost;
     var money = function (n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
     var upd = function () {
-      var s = +iS.value, c = +iC.value, sh = +iP.value / 100;
-      [iS, iC, iP].forEach(function (i) { i.style.setProperty("--p", ((i.value - i.min) / (i.max - i.min) * 100) + "%"); });
-      $("#o-sess").textContent = s; $("#o-cost").textContent = "$" + c.toFixed(2); $("#o-share").textContent = iP.value + "%";
+      var s = +iS.value, c = +iC.value, sh = cf.default_share_pct / 100;
+      [iS, iC].forEach(function (i) { i.style.setProperty("--p", ((i.value - i.min) / (i.max - i.min) * 100) + "%"); });
+      $("#o-sess").textContent = s; $("#o-cost").textContent = "$" + c.toFixed(2);
       var month = s * cf.weeks_per_month;
-      $("#r-points").textContent = "+" + (sh * g.gap_points).toFixed(1) + " points";
-      $("#r-reruns").textContent = (month * sh * g.gap_points / 100).toFixed(1);
+      $("#r-reruns").textContent = Math.round(month * sh * g.gap_points / 100);
       $("#r-money").textContent = money(month * sh * c * g.cost_clean_drop_pct / 100);
     };
-    [iS, iC, iP].forEach(function (i) { i.addEventListener("input", upd); });
+    [iS, iC].forEach(function (i) { i.addEventListener("input", upd); });
     upd();
   }
 
