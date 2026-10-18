@@ -24,3 +24,4 @@ evals/harbor/jobs/
 # explainer video render output
 video/out/
 video/tmp/
+video/rec
