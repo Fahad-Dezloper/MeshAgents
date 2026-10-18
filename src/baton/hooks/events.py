@@ -13,7 +13,7 @@ import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
 from baton.capture import derive, symbols, transcript
-from baton.core import codegraph, decisions, sessions
+from baton.core import codegraph, decisions, rules, sessions
 from baton.core.paths import normalize_path
 from baton.core.safety import scrub
 from baton.core.tasks import clip_goal
@@ -127,7 +127,14 @@ def on_session_start(store: Store, payload: Dict[str, Any], cfg: Config, now: Op
 
 def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     actor = actor_from(payload)
-    goal = sessions.set_goal(store, actor, str(payload.get("prompt", "")), now=now)
+    prompt = str(payload.get("prompt", ""))
+    goal = sessions.set_goal(store, actor, prompt, now=now)
+    try:
+        rules.record(store, actor, prompt, now=now)
+        if not goal:
+            sessions.note_followup(store, actor, prompt)
+    except Exception:
+        pass  # rule capture is an extra; never let it affect the session
     if not goal:
         return None
     dups = sessions.duplicate_sessions(store, actor, goal, now=now)

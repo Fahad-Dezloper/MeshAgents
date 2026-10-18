@@ -11,7 +11,7 @@ from baton.core.tasks import MIN_KEY_CHARS, _now, clip_goal, goal_key
 from baton.graph import queries
 from baton.graph.client import Store, new_id
 
-DECISION_KINDS = ("note", "rename", "interface", "config", "storage", "other")
+DECISION_KINDS = ("note", "rename", "interface", "config", "storage", "other", "rule")
 
 
 def ensure_actor(store: Store, actor_id: str, kind: str = "session", now: Optional[float] = None) -> None:

@@ -35,6 +35,9 @@ def render_packet(packet: Dict[str, object], max_chars: int = MAX_SUMMARY_CHARS)
         "HANDOFF %s" % packet["id"],
         "Task %s [%s]: %s" % (task["id"], task["status"], _clip(task["goal"])),  # type: ignore[index]
     ]
+    spec = str(task.get("spec") or "")  # type: ignore[union-attr]
+    if len(spec) > len(str(task["goal"])) + 20:  # type: ignore[index]
+        lines.append("What this session was asked to do (in full): %s" % _clip(spec, 1800))
     if packet.get("note"):
         lines.append("Last status: %s" % _clip(packet["note"], 400))
     if task.get("verification"):  # type: ignore[union-attr]

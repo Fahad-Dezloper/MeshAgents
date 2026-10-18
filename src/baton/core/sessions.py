@@ -20,6 +20,7 @@ SESSION_LEASE_SECONDS = 900
 BRIEFING_MAX_CHARS = 6000
 BRIEFING_DECISION_WINDOW = 24 * 3600
 HANDOFF_WINDOW = 7 * 24 * 3600
+RULE_WINDOW = 30 * 24 * 3600
 
 
 def session_task_id(actor: str) -> str:
@@ -61,6 +62,21 @@ def touch(store: Store, actor: str, path: str, now: Optional[float] = None,
     )
 
 
+SPEC_CHARS = 3000
+
+
+def note_followup(store: Store, actor: str, prompt: str) -> None:
+    """Later prompts of a session are part of what it was asked to do: append them to its spec."""
+    text = " ".join(scrub(prompt).split())[:600]
+    if not text:
+        return
+    store.query(
+        "MATCH (t:Task {id: $id}) WHERE t.spec IS NOT NULL AND size(t.spec) < $room "
+        "SET t.spec = t.spec + ' || ' + $p",
+        {"id": session_task_id(actor), "p": text, "room": SPEC_CHARS - 700},
+    )
+
+
 def set_goal(store: Store, actor: str, prompt: str, now: Optional[float] = None) -> Optional[str]:
     """First prompt becomes the session's goal. Returns the goal if it was set now."""
     full = " ".join(scrub(prompt).split())
@@ -70,8 +86,8 @@ def set_goal(store: Store, actor: str, prompt: str, now: Optional[float] = None)
     begin_session(store, actor, now=now)
     rows = store.rows(
         "MATCH (t:Task {id: $id}) WHERE t.auto_goal = true "
-        "SET t.goal = $goal, t.goal_key = $gk, t.auto_goal = false RETURN t.goal",
-        {"id": session_task_id(actor), "goal": goal, "gk": goal_key(full)},
+        "SET t.goal = $goal, t.goal_key = $gk, t.auto_goal = false, t.spec = $spec RETURN t.goal",
+        {"id": session_task_id(actor), "goal": goal, "gk": goal_key(full), "spec": full[:SPEC_CHARS]},
     )
     return full if rows else None
 
@@ -155,8 +171,22 @@ def briefing(store: Store, actor: str, now: Optional[float] = None,
             parts.append("- %s: %s%s" % (str(task["owner"])[:13], clip_goal(task["goal"], 160),
                                          " (touching %s)" % ", ".join(paths) if paths else ""))
 
+    rules = store.rows(
+        "MATCH (d:Decision {kind: 'rule'}) WHERE d.status = 'open' AND d.author <> $actor "
+        "AND d.created_at >= $since RETURN d.text ORDER BY d.created_at DESC LIMIT 8",
+        {"actor": actor, "since": t - RULE_WINDOW},
+        read_only=True,
+    )
+    if rules:
+        seen: List[str] = []
+        for (txt,) in rules:
+            if txt not in seen:
+                seen.append(txt)
+        parts.append("Rules and facts stated earlier by the user (not in the code):")
+        parts.extend("- %s" % scrub(x, 240) for x in seen)
+
     decs = store.rows(
-        "MATCH (d:Decision) WHERE d.status IN ['open', 'tainted'] AND d.author <> $actor "
+        "MATCH (d:Decision) WHERE d.status IN ['open', 'tainted'] AND d.kind <> 'rule' AND d.author <> $actor "
         "AND d.created_at >= $since "
         "WITH d, CASE WHEN d.status = 'tainted' THEN 0 WHEN d.kind <> 'note' THEN 1 ELSE 2 END AS prio "
         "ORDER BY prio, d.created_at DESC LIMIT 8 RETURN d",
