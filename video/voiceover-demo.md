@@ -4,12 +4,13 @@ Video: `MeshAgents-demo.mp4` (58 s, silent). The same words are in `teleprompter
 
 | From | On screen | Say |
 |---|---|---|
-| 0:00 | Empty board | My AI helpers kept breaking each other's work. So I built this. |
-| 0:04 | Helper 1 gets a job | MeshAgents is a shared memory for AI helpers. Helper one gets a job and a rule: no sqlite. |
-| 0:11 | Helper 2 starts | Helper two starts a related job while helper one is still working. MeshAgents tells it what is going on. |
-| 0:24 | The heads-up | Before helper two edits a file helper one changed, it gets a heads-up. No clash. |
-| 0:31 | A brand new helper | Next day, a brand new helper starts. Nobody told it the rule, but it already knows: no sqlite. So it saves to a file. |
-| 0:44 | What the next helper is told | That small note is all it was told. Nobody wrote it. |
-| 0:49 | The numbers | The result: fewer clashes, helpers that remember, and twenty-nine percent less money and tokens for every good result. |
+| 0:00 | Empty board | Hi, this is my submission for the FalkorDB hackathon. My name is Fahad, and here is what I built: MeshAgents. |
+| 0:07 | Empty board, then agent 1 starts | It is a shared notebook for AI agents that work on the same project. |
+| 0:12 | Agent 1 job and rule | The problem: agents can't see each other. So they overwrite each other's work, and a new agent forgets your rules. |
+| 0:20 | Agent 2 starts; the heads-up | Here, agent two starts a job on a file that agent one is changing. MeshAgents warns it first. No clash. |
+| 0:28 | A brand new agent knows the rule | The next day, a brand new agent already knows our rule: no sqlite. Everything is saved in a FalkorDB graph. |
+| 0:36 | Notes the new agent was given | And it is easy. Install the plugin, and that is it. It runs by itself. You do nothing. |
+| 0:43 | The numbers | In 330 test runs, clean runs went from 53 to 80 percent, and each good result cost 29 percent less. |
+| 0:52 | The numbers (end) | That is MeshAgents. Thanks for watching! |
 
-About 118 words in total. Why we made it (first line), what it does (second line), what it saves (last line).
+About 135 words in total, in the order: hello, what it is, the problem, how it helps, it remembers, easy setup, the numbers, the end.
