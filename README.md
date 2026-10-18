@@ -121,7 +121,9 @@ the graph (incrementally afterwards). When a session changes how a function is c
 parameter, reordered or removed parameters, a rename), it is told right after the edit which callers
 elsewhere will break and which live sessions are working in those files. Compatible changes (a new
 parameter with a default) stay silent. Calls are resolved from imports and definitions only; a call on
-an object of unknown type is not linked. `BATON_CODE_GRAPH=0` turns it off.
+an object of unknown type is not linked. `BATON_CODE_GRAPH=0` turns it off. Measured honestly: tests and a real session verify the mechanism, but in 40 evaluation
+trials the impact warning fired once, so no outcome benefit is claimed for it yet
+([docs/RESULTS.md](docs/RESULTS.md), round 5).
 
 Automatic: a session is briefed on other live sessions and the latest handoff; edits are checked
 against other sessions' work; file changes and renames are recorded; interface, config and

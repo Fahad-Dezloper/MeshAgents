@@ -210,3 +210,36 @@ Both are integration mismatches that only appear when both sessions have finishe
 adding the same stock reservation (L6), and one session changing a returned dict's shape while another's
 tests expect the old shape (L4). Warnings before an edit cannot see work that has not been written yet.
 
+
+# Round 5: code symbol graph
+
+Run: 2026-10-18, 12:59-13:28 IST. Plugin = hooks-only default plus the code symbol graph (index of Python
+definitions and call sites; after an edit that changes a public call shape incompatibly, the editor is
+told which callers elsewhere break and which live sessions are in those files). 5 attempts per level on
+L1, L2, L3, L4, L6, L8, L9, L10 (L5 cannot be passed by design; L7 was already at ceiling). Post-hoc: the
+level set was chosen after earlier rounds, so treat the statistics as descriptive.
+
+| Level | Baseline | Hooks-only | + symbol graph |
+|---|---|---|---|
+| L1 | 4/5 | 4/5 | 4/5 |
+| L2 | 5/5 | 5/5 | 5/5 |
+| L3 | 1/5 | 5/5 | 4/5 |
+| L4 | 2/5 | 3/5 | 5/5 |
+| L6 | 0/5 | 2/5 | 2/5 |
+| L8 | 7/7 | 7/7 | 5/5 |
+| L9 | 4/7 | 7/7 | 4/5 |
+| L10 | 4/7 | 3/7 | 4/5 |
+| **Total** | **27/46** | **36/46** | **33/40** |
+
+- Symbol graph vs baseline: 33/40 vs 27/46 clean, Fisher p = 0.02 (post-hoc, uncorrected). vs hooks-only:
+  p = 0.79, no difference.
+- Tokens and turns equal hooks-only (per-level ratios of output, cache-read, turns and cost: 0.95-0.99).
+  Estimated cost per clean run $0.0109 vs $0.0135 for baseline.
+- **The graph-specific warning almost never fired: 1 impact warning in 40 trials.** These levels rarely
+  produce a call-shape break that the sessions do not already catch by re-reading, so this run cannot
+  show that the code graph itself changes outcomes. The L4 result (5/5) is not attributable to it.
+- Hook latency with indexing: session start 114 ms mean (first index included), post-edit 106 ms mean.
+- What is verified: the resolver and breaking-change rules by unit tests, the full path by a real
+  Claude Code session (the PostToolUse message reached the model and was relayed), and the dashboard's
+  code map. Not verified: an outcome benefit. A level built around hidden call sites would be needed.
+
