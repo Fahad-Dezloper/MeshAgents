@@ -62,6 +62,7 @@ started a second session that was not told. 150 test runs, three setups:
 - Baton gives the same result as a notes file that a person keeps perfectly up to date, with nothing to maintain, and costs about 12% less.
 - Where nothing needs remembering, baton costs about 7% more per run and results are the same.
 - Honest limit: two of the four tasks are built so a session with no memory cannot know the fact, so the "no memory" number is low by design. We do not know how often real work needs a remembered fact.
+- After the rules were made smarter, a re-run on the final code passed 40 of 40 on those tasks, and found one useful rule hidden among 20 irrelevant ones in 10 of 10 runs (a notes file: 9 of 10). That re-run is a post-hoc improvement, reported next to the original.
 - Full method, numbers and limits: [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md).
 
 Small samples, one cheap model, one test project, tasks and scoring written by the same author. Details: [For the technical reader](#for-the-technical-reader).

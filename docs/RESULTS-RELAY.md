@@ -206,3 +206,34 @@ re-run once and counted in the report.
 ## Known limits
 One more author-written task, one model, 10 trials per arm, the rule is a single clean sentence, and the
 pasted list is only 20 lines. This is a small step toward "memory under volume", not a test of large memories.
+
+
+# Re-check on the final code, and the R6 result (run 2026-10-18, 15:31-15:49 IST, prefix relay2)
+
+After the first run, rules were made smarter (ranked by relevance to the request; a rule that names a file
+also appears when that file is edited; up to 15 rules captured per prompt). That change was motivated by the
+two R2 failures in the first run, so this re-run is a post-hoc improvement, reported next to the original.
+Only the baton arm was re-run on R1-R5 (the other arms do not use baton code); R6 was run for all three arms.
+
+| Task (10 runs each) | Baton, first run | Baton, final code |
+|---|---|---|
+| R1 continue unfinished work | 10 | 10 |
+| R2 a rule stated once | 8 | **10** |
+| R3 a convention stated once | 10 | 10 |
+| R4 a failed approach (no signal) | 10 | 10 |
+| R5 control, nothing to remember | 10 | 10 |
+| R1-R4 pooled | 38/40 (95%, CI 83-99%) | **40/40 (100%, CI 91-100%)** |
+
+Cost per successful run, R1-R4: $0.0056 on the final code ($0.0055-$0.0058), $0.0058 on the first run.
+
+## R6: one useful rule hidden among 20 (pre-registered in the R6 addendum), 10 runs each
+| Arm | Passed | Cost per success |
+|---|---|---|
+| No memory (control; cannot know the rule) | 0/10 | n/a |
+| Notes file | 9/10 (90%, CI 60-98%) | $0.0070 ($0.0059-$0.0091) |
+| **Baton** | **10/10 (100%, CI 72-100%)** | **$0.0058 ($0.0056-$0.0060)** |
+
+Baton found the one relevant rule among 20 and cost about 17% less per success than the notes file. With 10
+runs per cell the difference between baton and the notes file in pass rate is not significant (10/10 vs 9/10).
+The baseline passes the rounding check by habit in places (Python's round is half-even), so it is a control only.
+
