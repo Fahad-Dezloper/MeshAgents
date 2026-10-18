@@ -8,6 +8,7 @@ import urllib.request
 import uuid
 
 from tests.support import DB_UP
+from tests.ui_codeseed import seed_code
 from tests.ui_seed import HOSTILE, seed
 
 from baton.graph.client import Store
@@ -110,6 +111,59 @@ class UiCase(unittest.TestCase):
         for bad in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("):
             self.assertNotIn(bad, src)
         self.assertIsNone(re.search(r"https?://(?!127\.0\.0\.1|www\.w3\.org)", src))  # no CDN, works offline
+
+
+@unittest.skipUnless(DB_UP, "FalkorDB not reachable")
+class CodeUiCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ws = "ui_" + uuid.uuid4().hex[:8]
+        cls.store = Store(cls.ws)
+        cls.store.bootstrap()
+        cls.dec = seed_code(cls.store)
+        cls.empty = Store("ui_" + uuid.uuid4().hex[:8])
+        cls.empty.bootstrap()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.store.drop()
+        cls.empty.drop()
+
+    def test_code_counts_and_edges(self):
+        c = state.code_state(self.store)
+        self.assertGreater(c["counts"]["files"], 3)
+        self.assertGreater(c["counts"]["calls"], 0)
+        edge = [e for e in c["edges"] if e["from"] == "shop/api.py" and e["to"] == "shop/db.py"]
+        self.assertTrue(edge and edge[0]["weight"] >= 1)
+        db = next(f for f in c["files"] if f["path"] == "shop/db.py")
+        self.assertEqual(db["live"], ["sess-A"[:12]])
+        self.assertEqual(db["interface_decisions"], 1)
+        self.assertTrue(any(x["qual"] == "get_order" and x["line"] for x in db["symbols"]))
+        self.assertEqual(db["called_from"][0]["file"], "shop/api.py")
+        api = next(f for f in c["files"] if f["path"] == "shop/api.py")
+        self.assertEqual(api["live"], ["sess-B"])
+
+    def test_impact_section(self):
+        imp = state.code_state(self.store)["impact"]
+        self.assertEqual(len(imp), 1)
+        hit = [h for h in imp[0]["callers"] if h["symbol"] == "get_order"][0]
+        self.assertEqual((hit["caller_file"], hit["being_edited_by"]), ("shop/api.py", ["sess-B"]))
+        self.assertEqual(imp[0]["affected_live"], ["sess-B"])
+
+    def test_empty_graph(self):
+        c = state.code_state(self.empty)
+        self.assertEqual((c["counts"]["files"], c["files"], c["impact"]), (0, [], []))
+
+    def test_api_code_route(self):
+        srv = server.make_server(server.App(self.ws), "127.0.0.1", 0)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:%d/api/code" % srv.server_address[1]) as r:
+                self.assertEqual(r.status, 200)
+                self.assertGreater(json.loads(r.read())["counts"]["calls"], 0)
+        finally:
+            srv.shutdown()
+            srv.server_close()
 
 
 if __name__ == "__main__":

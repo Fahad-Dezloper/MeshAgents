@@ -8,6 +8,7 @@ baton status [--json]                       # live sessions, leases, shared file
 baton why <decision-or-finding-id>          # what it was based on, and what depends on it
 baton retract <id> --reason "..." [--yes]   # asks first; prints the decisions that became tainted
 baton handoff                               # latest handoff briefing
+baton impact <path>                         # callers of a file's public symbols, and who is in those files
 ```
 
 All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WORKSPACE` override it).
@@ -24,10 +25,17 @@ All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WO
   (open, superseded, retracted, tainted). "show based on" expands the upstream chain.
 - **Provenance**: "provenance" or "blast radius" opens a layered graph: sources left, derived decisions right, plus a
   preview of what retracting the item would taint. The preview is read-only. The URL fragment `#id=<id>` deep-links to it.
+- **Impact of recent changes**: for each open interface decision whose text says "signature changed" or "removed",
+  the callers in other files (from the code graph), flagged "being edited by ..." when a live session is in that file.
+- **Code map**: files as nodes, caller -> callee arrows weighted by call count (60 files, 150 edges max). Red nodes have a
+  live session in them, "iface" marks an open interface decision. Click a file for its symbols (signature, line),
+  "called from" and "calls into". Data comes from `/api/code`; the index is built by the hooks and `demo/run_demo.py`.
 - **Graph**: deterministic overview of tasks, files, decisions and findings (capped at 150 nodes); hover for detail.
 - With an empty graph the page shows the three start commands instead.
 
 ![Provenance](img/ui-provenance.png)
+
+Light theme: `img/ui-light.png`; a 400 px wide layout: `img/ui-narrow.png` (the maps scroll sideways inside their box).
 
 The page polls `/api/state` every 1.5 s. If FalkorDB is down it shows a banner and keeps polling.
 
@@ -37,6 +45,6 @@ The page polls `/api/state` every 1.5 s. If FalkorDB is down it shows a banner a
 - GET only. There are no write endpoints; every query goes through `ro_query`. Retraction is CLI-only.
 - Decision and finding text comes from other sessions and is untrusted. The API returns it as raw JSON; the page
   builds the DOM with `textContent` only (a test fails if `innerHTML` appears), and a CSP forbids external loads.
-- Responses are capped (100 decisions, 60 tasks, 80 files, 150 graph nodes, 1.5 MB body).
+- Responses are capped (60 code files, 100 decisions, 60 tasks, 80 files, 150 graph nodes, 1.5 MB body).
 - `baton handoff` records that a human imported the handoff, like any other session would.
 - No dependencies, no CDN, no build step: one HTML file in `src/baton/ui/static/`.

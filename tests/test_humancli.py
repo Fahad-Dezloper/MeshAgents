@@ -4,6 +4,7 @@ import unittest
 import uuid
 
 from tests.support import DB_UP
+from tests.ui_codeseed import seed_code
 from tests.ui_seed import seed
 
 from baton import cli, humancli
@@ -74,6 +75,22 @@ class HumanCliCase(unittest.TestCase):
         self.assertEqual(provenance.get_finding(self.store, self.ids["finding"])["status"], "retracted")
         code, text = self.run_cmd("status")
         self.assertIn("tainted", text)
+
+    def test_impact_and_status_code_line(self):
+        other = Store("ui_" + uuid.uuid4().hex[:8])
+        other.bootstrap()
+        self.addCleanup(other.drop)
+        seed_code(other)
+        self.ws = other.workspace  # instance attribute only; the class workspace is untouched
+        code, text = self.run_cmd("impact", "shop/db.py")
+        self.assertEqual(code, 0)
+        self.assertIn("shop/api.py", text)
+        self.assertIn("being edited by sess-B", text)
+        self.assertIn("fetch_order calls get_order", text)
+        code, text = self.run_cmd("impact", "shop/nothing.py")
+        self.assertIn("Nothing indexed", text)
+        code, text = self.run_cmd("status")
+        self.assertRegex(text, r"code graph: \d+ file\(s\) indexed")
 
     def test_dispatch_from_main_cli(self):
         self.assertTrue(callable(cli.main))

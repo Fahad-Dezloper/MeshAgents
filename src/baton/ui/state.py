@@ -207,3 +207,133 @@ def provenance_view(store: Store, item_id: str) -> Optional[dict]:
         "would_taint": [_brief(d, "decision") for d in down if d.get("status") == "open"],
         "edges": edges,
     }
+
+
+# ---------------------------------------------------------------- code graph (read-only)
+
+MAX_CODE_FILES = 60
+MAX_CODE_EDGES = 150
+MAX_EDGE_ROWS = 4000
+_NAME = None
+
+
+def _names_in(text: str) -> set:
+    import re
+
+    return {m.split(".")[-1] for m in re.findall(r"([A-Za-z_][\w.]*)\(", text or "")} - {"interface"}
+
+
+def code_state(store: Store, base: Optional[dict] = None, now: Optional[float] = None) -> dict:
+    """Files indexed, symbols, call edges, a file-level dependency map and recent-change impact."""
+    base = base if base is not None else build_state(store, now)
+    out = {"workspace": store.workspace, "now": base["now"], "connected": base["connected"], "error": base["error"],
+           "counts": {"files": 0, "symbols": 0, "calls": 0}, "files": [], "edges": [], "impact": [],
+           "truncated": False}
+    if not base["connected"]:
+        return out
+    try:
+        nfiles = store.rows("MATCH (a:Artifact) WHERE a.indexed_hash IS NOT NULL RETURN count(a)", read_only=True)
+        syms = store.rows("MATCH (s:Symbol) RETURN s.path, s.qual, s.name, s.sig, s.line, s.kind "
+                          "ORDER BY s.path, s.line LIMIT 6000", read_only=True)
+        calls = store.rows("MATCH (c:Symbol)-[:CALLS]->(s:Symbol) RETURN c.path, c.qual, s.path, s.qual LIMIT %d"
+                           % MAX_EDGE_ROWS, read_only=True)
+        ncalls = store.rows("MATCH (:Symbol)-[r:CALLS]->(:Symbol) RETURN count(r)", read_only=True)
+    except Exception as e:
+        out.update(connected=False, error="%s: %s" % (type(e).__name__, str(e)[:160]))
+        return out
+    out["counts"] = {"files": int(nfiles[0][0]) if nfiles else 0, "symbols": len(syms),
+                     "calls": int(ncalls[0][0]) if ncalls else 0}
+
+    live: Dict[str, List[str]] = {}
+    for s in base["sessions"]:
+        if s["status"] == "live":
+            for p in s["files"]:
+                live.setdefault(p, []).append(s["short"])
+    iface: Dict[str, int] = {}
+    for d in base["decisions"]:
+        if d["status"] == "open" and d["kind"] == "interface":
+            for p in d["files"]:
+                iface[p] = iface.get(p, 0) + 1
+
+    by_file: Dict[str, dict] = {}
+
+    def node(p):
+        return by_file.setdefault(p, {"path": _s(p, 300), "symbols": [], "called_from": {}, "calls_into": {},
+                                      "in_weight": 0, "out_weight": 0})
+
+    for path, qual, name, sig, line, kind in syms:
+        n = node(path)
+        if len(n["symbols"]) < 25:
+            n["symbols"].append({"qual": _s(qual, 120), "sig": _s(sig, 200), "line": int(line or 0), "kind": _s(kind, 12)})
+    weights: Dict[tuple, int] = {}
+    for cpath, cqual, spath, squal in calls:
+        if cpath == spath:
+            continue
+        weights[(cpath, spath)] = weights.get((cpath, spath), 0) + 1
+        node(cpath)["out_weight"] += 1
+        node(spath)["in_weight"] += 1
+        node(spath)["called_from"].setdefault(cpath, []).append("%s -> %s" % (cqual, squal))
+        node(cpath)["calls_into"].setdefault(spath, []).append("%s -> %s" % (cqual, squal))
+
+    def rank(p):
+        n = by_file[p]
+        return (-(len(live.get(p, [])) > 0), -(n["in_weight"] + n["out_weight"]), p)
+
+    paths = sorted(by_file, key=rank)
+    out["truncated"] = len(paths) > MAX_CODE_FILES
+    keep = set(paths[:MAX_CODE_FILES])
+    for p in paths[:MAX_CODE_FILES]:
+        n = by_file[p]
+        out["files"].append({
+            "path": n["path"], "symbols": n["symbols"], "in_weight": n["in_weight"], "out_weight": n["out_weight"],
+            "called_from": [{"file": _s(f, 300), "uses": sorted(set(u))[:8]} for f, u in sorted(n["called_from"].items())[:12]],
+            "calls_into": [{"file": _s(f, 300), "uses": sorted(set(u))[:8]} for f, u in sorted(n["calls_into"].items())[:12]],
+            "live": live.get(p, []), "interface_decisions": iface.get(p, 0)})
+    edges = sorted(((a, b, w) for (a, b), w in weights.items() if a in keep and b in keep), key=lambda e: (-e[2], e[0], e[1]))
+    out["edges"] = [{"from": _s(a, 300), "to": _s(b, 300), "weight": w} for a, b, w in edges[:MAX_CODE_EDGES]]
+
+    # Impact of recent interface changes: callers elsewhere, flagged when a live session is in that file.
+    by_name: Dict[str, List[tuple]] = {}
+    for path, qual, name, sig, line, kind in syms:
+        by_name.setdefault(path, []).append((qual, name))
+    callers_of: Dict[tuple, set] = {}
+    for cpath, cqual, spath, squal in calls:
+        if cpath != spath:
+            callers_of.setdefault((spath, squal), set()).add((cpath, cqual))
+    for d in base["decisions"]:
+        low = d["text"].lower()
+        if d["status"] != "open" or d["kind"] != "interface" or not ("signature changed" in low or "removed" in low):
+            continue
+        names = _names_in(d["text"])
+        hits = []
+        for fpath in d["files"]:
+            for qual, name in by_name.get(fpath, []):
+                if name in names or qual in names:
+                    for cpath, cqual in sorted(callers_of.get((fpath, qual), ())):
+                        hits.append({"symbol": _s(qual, 120), "file": _s(fpath, 300), "caller_file": _s(cpath, 300),
+                                     "caller": _s(cqual, 120), "being_edited_by": live.get(cpath, [])})
+        if hits:
+            out["impact"].append({"decision_id": d["id"], "text": d["text"][:300], "author": d["author"],
+                                  "created_at": d["created_at"], "callers": hits[:30],
+                                  "affected_live": sorted({x for h in hits for x in h["being_edited_by"]})})
+    return out
+
+
+def impact_for_file(store: Store, path: str, base: Optional[dict] = None) -> dict:
+    """Callers of a file's public symbols, grouped by calling file, with live sessions in those files."""
+    base = base if base is not None else build_state(store)
+    live: Dict[str, List[str]] = {}
+    for s in base["sessions"]:
+        if s["status"] == "live":
+            for p in s["files"]:
+                live.setdefault(p, []).append(s["short"])
+    rows = store.rows(
+        "MATCH (c:Symbol)-[:CALLS]->(s:Symbol) WHERE s.path = $p AND c.path <> $p AND NOT s.name STARTS WITH '_' "
+        "RETURN c.path, c.qual, s.qual ORDER BY c.path, s.qual LIMIT 300", {"p": path}, read_only=True)
+    groups: Dict[str, List[str]] = {}
+    for cpath, cqual, squal in rows:
+        groups.setdefault(cpath, []).append("%s calls %s" % (cqual, squal))
+    own = store.rows("MATCH (s:Symbol {path: $p}) WHERE NOT s.name STARTS WITH '_' RETURN count(s)", {"p": path}, read_only=True)
+    return {"path": path, "public_symbols": int(own[0][0]) if own else 0,
+            "callers": [{"file": f, "uses": sorted(set(u)), "sessions": live.get(f, [])} for f, u in groups.items()],
+            "sessions_here": live.get(path, [])}
