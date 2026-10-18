@@ -38,7 +38,7 @@ button.go{background:#34d399;color:#04140d;border-color:#34d399;font-weight:700}
 #status{font-size:14px;color:#8b908d;padding:0 8px}
 #status b{color:#34d399;font-weight:600}
 </style></head><body class="idle">
-<div id="top"><div id="label">Ready</div><div id="clock">0:00 / 0:58</div></div>
+<div id="top"><div id="label">Ready</div><div id="clock">0:00 / 1:06</div></div>
 <div id="stage"><div id="lines"></div></div>
 <div id="bar"><div id="fill"></div><div id="ticks"></div></div>
 <div id="count"></div>
@@ -56,15 +56,15 @@ button.go{background:#34d399;color:#04140d;border-color:#34d399;font-weight:700}
 <script>
 /* ===== THE SCRIPT: edit the words here. t = second of the video where the line starts. ===== */
 const SCRIPT = {
-  duration: 58,
+  duration: 66,
   lines: [
     {t: 0, label: "Intro", text: "Hi, this is my submission for the FalkorDB hackathon. My name is Fahad, and here is what I built: MeshAgents."},
     {t: 6, label: "What it is", text: "MeshAgents is a shared notebook for AI agents working on the same project."},
     {t: 11, label: "The problem", text: "The problem: agents overwrite each other's work. And every new agent starts blank. It must reread the whole project before changing anything, and that burns tokens."},
-    {t: 21, label: "What I built", text: "So I built MeshAgents on a FalkorDB graph. It stores who is working on what, every change, and every rule. Before agent two edits agent one's file, it gets a warning. No clash."},
-    {t: 33, label: "It remembers", text: "Then a brand new agent starts, and it already knows our rule: no sqlite. It reads one short note, not the whole project."},
-    {t: 43, label: "Easy setup", text: "Setup is easy. Install the plugin, and it runs by itself. You do nothing."},
-    {t: 50, label: "Results", text: "In 330 test runs, clean runs went from 53 to 80 percent, and each good result cost 29 percent less. Thanks for watching!"}
+    {t: 22, label: "What I built", text: "So I built MeshAgents on a FalkorDB graph. It stores who is working on what, every change, and every rule. Before agent two edits agent one's file, it gets a warning. No clash."},
+    {t: 36, label: "It remembers", text: "Then a brand new agent starts, and it already knows our rule: no sqlite. It reads one short note, not the whole project."},
+    {t: 46, label: "Easy setup", text: "Setup is easy. Install the plugin, and it runs by itself. You do nothing."},
+    {t: 56, label: "Results", text: "In 330 test runs, clean runs went from 53 to 80 percent, and each good result cost 29 percent less. Thanks for watching!"}
   ]
 };
 /* ========================================================================================== */
@@ -73,7 +73,8 @@ const q = new URLSearchParams(location.search);
 const D = SCRIPT.duration, L = SCRIPT.lines;
 let fs = parseInt(localStorage.getItem('tp_fs')||'68',10); document.documentElement.style.setProperty('--fs', fs+'px');
 let state = 'idle'; // idle | countdown | running | paused | ended
-let playerWin = null, playerMsg = null, playerSeen = 0;
+let playerWin = null, playerSeen = 0;
+const bc = new BroadcastChannel('meshagents-tp');
 let t0 = 0, tPaused = 0, cdOn = true;
 const fmt = s => { s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
 
@@ -87,9 +88,8 @@ L.forEach((ln,i)=>{
 });
 const ticks = $('ticks'); L.forEach(ln=>{ if(ln.t>0){ const i=document.createElement('i'); i.style.left=(ln.t/D*100)+'%'; ticks.appendChild(i); } });
 
-function connected(){ return playerWin && !playerWin.closed && (performance.now()-playerSeen)<1500; }
+function connected(){ return (performance.now()-playerSeen)<1500; }
 function now(){
-  if(connected() && playerMsg && (state==='running'||state==='paused'||state==='ended')) return playerMsg.t;
   if(state==='running') return (performance.now()-t0)/1000;
   if(state==='paused'||state==='ended') return tPaused;
   return 0;
@@ -118,8 +118,12 @@ function render(t){
 }
 function setStatus(){ const c = connected(); $('status').innerHTML = 'Video window: <b>'+(c?'connected':'not open')+'</b>'+(c?'':' (practice mode)'); }
 
-function sendP(cmd, extra){ if(playerWin && !playerWin.closed){ try{ playerWin.postMessage(Object.assign({src:'meshagents-teleprompter', cmd}, extra||{}),'*'); }catch(e){} } }
-window.addEventListener('message', e=>{ const m=e.data; if(m && m.src==='meshagents-player'){ playerMsg=m; playerSeen=performance.now(); if(m.ended && state==='running'){ finish(); } } });
+function sendP(){ bc.postMessage({src:'tp', running: state==='running', T: now()}); }
+setInterval(sendP, 250);
+bc.onmessage = e => { const m=e.data; if(!m) return;
+  if(m.src==='player'){ playerSeen=performance.now(); }
+  else if(m.src==='player-cmd'){ if(m.cmd==='toggle'){ if(state==='idle'||state==='ended'){ if(state==='ended') restart(); start(); } else if(state==='running') pause(); else if(state==='paused') resume(); } else if(m.cmd==='restart') restart(); }
+};
 
 $('openv').onclick = ()=>{
   playerWin = window.open('player.html','meshagents_player','width=1280,height=760');
@@ -136,16 +140,16 @@ function start(){
   const go = ()=>{
     $('count').classList.remove('show');
     state='running'; t0=performance.now();
-    if(connected()) sendP('play',{at:0});
+    sendP();
   };
   if(!cdOn){ go(); return; }
   let n=3; $('count').textContent=n; $('count').classList.add('show');
   const iv=setInterval(()=>{ n--; if(n>0){ $('count').textContent=n; } else { clearInterval(iv); $('count').textContent='GO'; setTimeout(go,350); } },1000);
 }
-function pause(){ if(state!=='running') return; tPaused=now(); state='paused'; sendP('pause'); }
-function resume(){ if(state!=='paused') return; t0=performance.now()-tPaused*1000; state='running'; sendP('resume'); }
-function restart(){ state='idle'; tPaused=0; sendP('restart'); $('count').classList.remove('show'); render(0); }
-function finish(){ tPaused=D; state='ended'; $('label').textContent='Done. Stop the recording.'; }
+function pause(){ if(state!=='running') return; tPaused=now(); state='paused'; sendP(); }
+function resume(){ if(state!=='paused') return; t0=performance.now()-tPaused*1000; state='running'; sendP(); }
+function restart(){ state='idle'; tPaused=0; sendP(); $('count').classList.remove('show'); render(0); }
+function finish(){ tPaused=D; state='ended'; sendP(); $('label').textContent='Done. Stop the recording.'; }
 
 $('start').onclick = start; $('pause').onclick = ()=> state==='paused'?resume():pause(); $('restart').onclick = restart;
 $('smaller').onclick = ()=>setFs(fs-6); $('larger').onclick = ()=>setFs(fs+6);
@@ -165,7 +169,7 @@ document.addEventListener('mousemove',wake); wake();
 // test hook: ?t=15 shows the state at second 15 (paused); ?m=1 mirror
 if(q.has('t')){ state='paused'; tPaused=parseFloat(q.get('t')); if(q.get('m')) document.body.classList.add('mirror'); document.body.classList.remove('idle'); }
 
-function tick(){ if(state==='running' && !connected() && (performance.now()-t0)/1000>=D) finish(); setStatus(); render(now()); requestAnimationFrame(tick); }
+function tick(){ if(state==='running' && (performance.now()-t0)/1000>=D){ finish(); sendP(); } setStatus(); render(now()); requestAnimationFrame(tick); }
 document.body.classList.add('notrans');
 tick();
 setTimeout(()=>document.body.classList.remove('notrans'),300);

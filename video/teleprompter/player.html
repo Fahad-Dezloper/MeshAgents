@@ -2,47 +2,62 @@
 <html lang="en"><head><meta charset="utf-8"><title>MeshAgents demo: video window</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-html,body{margin:0;height:100%;background:#000;color:#cfd3d0;font-family:-apple-system,"SF Pro Text",Inter,Arial,sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;background:#000;color:#cfd3d0;font-family:-apple-system,"SF Pro Display",Inter,Arial,sans-serif;overflow:hidden}
 video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#title{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;background:#0b0b0a;text-align:center;padding:0 8vw;transition:opacity .7s ease}
+#title.hide{opacity:0;pointer-events:none}
+#title svg{width:110px;height:110px;color:#5eead4}
+#title h1{margin:0;font-size:clamp(70px,10vw,170px);font-weight:600;letter-spacing:-.045em;line-height:1;color:#f4f3ef}
+#title p{margin:0;font-size:clamp(24px,2.7vw,46px);color:#9a9a94;max-width:1300px;line-height:1.3}
 body.idle{cursor:none}
-#pick{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-size:20px}
+#pick{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-size:20px;background:#000;z-index:5}
 #pick.show{display:flex}
-#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);font-size:15px;color:#8b908d;background:rgba(20,20,20,.7);padding:8px 16px;border-radius:999px;transition:opacity .4s}
+#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);font-size:15px;color:#8b908d;background:rgba(20,20,20,.7);padding:8px 16px;border-radius:999px;transition:opacity .4s;z-index:4}
 body.idle #hint,body.playing #hint{opacity:0}
 button,input{font:inherit}
 </style></head><body>
 <video id="v" src="MeshAgents-demo.mp4" muted playsinline preload="auto"></video>
+<div id="title">
+  <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5 L26 25 H6 Z"/><circle cx="16" cy="5" r="3" fill="currentColor"/><circle cx="26" cy="25" r="3" fill="currentColor"/><circle cx="6" cy="25" r="3" fill="currentColor"/></svg>
+  <h1>MeshAgents</h1>
+  <p>A shared notebook for AI agents working on the same project.</p>
+</div>
 <div id="pick"><div>Choose the demo video file (MeshAgents-demo.mp4)</div><input id="file" type="file" accept="video/mp4,video/*"></div>
-<div id="hint">Drag this window to your recording screen, then double-click for full screen. Start from the teleprompter.</div>
+<div id="hint">Drag this window to your recording screen and double-click for full screen. Press Space here or in the teleprompter to start both.</div>
 <script>
-const v = document.getElementById('v');
-const pick = document.getElementById('pick');
+const HOLD = 8; // seconds the title card stays up before the demo video starts (must match the teleprompter)
+const v = document.getElementById('v'), pick = document.getElementById('pick'), title = document.getElementById('title');
 v.muted = true;
-function send(extra){
-  if(!window.opener) return;
-  try{ window.opener.postMessage(Object.assign({src:'meshagents-player', t:v.currentTime||0, playing:!v.paused&&!v.ended,
-        dur:v.duration||0, ended:v.ended, ready:v.readyState>=2}, extra||{}), '*'); }catch(e){}
+const bc = new BroadcastChannel('meshagents-tp');
+let running = false, T = 0, recvAt = performance.now();
+bc.onmessage = e => { const m = e.data; if(!m || m.src!=='tp') return; running = m.running; T = m.T; recvAt = performance.now(); };
+setInterval(()=>bc.postMessage({src:'player', dur:v.duration||0, ready:v.readyState>=2}), 400);
+function cur(){ return running ? T + (performance.now()-recvAt)/1000 : T; }
+function loop(){
+  const t = cur(), vt = t - HOLD;
+  title.classList.toggle('hide', vt >= 0.05);
+  document.body.classList.toggle('playing', running);
+  if(vt < 0){ if(!v.paused) v.pause(); if(v.currentTime>0.05) v.currentTime = 0; }
+  else if(running){
+    if(Math.abs(v.currentTime - vt) > 0.4) v.currentTime = vt;
+    if(v.paused && !v.ended) v.play().catch(()=>{});
+  } else {
+    if(!v.paused) v.pause();
+    if(Math.abs(v.currentTime - vt) > 0.05) v.currentTime = Math.max(0,vt);
+  }
+  requestAnimationFrame(loop);
 }
-setInterval(send, 80);
-v.addEventListener('play',()=>{document.body.classList.add('playing','idle');});
-v.addEventListener('pause',()=>{document.body.classList.remove('playing');});
-['play','pause','seeked','ended','loadeddata'].forEach(ev=>v.addEventListener(ev,()=>send({event:ev})));
+loop();
 v.addEventListener('error',()=>pick.classList.add('show'));
-document.getElementById('file').addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f) return; v.src=URL.createObjectURL(f); pick.classList.remove('show'); v.load();
-});
-window.addEventListener('message',e=>{
-  const m=e.data; if(!m||m.src!=='meshagents-teleprompter') return;
-  if(m.cmd==='play'){ v.currentTime=Math.max(0,m.at||0); v.play().catch(()=>{}); }
-  if(m.cmd==='pause'){ v.pause(); }
-  if(m.cmd==='resume'){ v.play().catch(()=>{}); }
-  if(m.cmd==='restart'){ v.pause(); v.currentTime=0; }
-  if(m.cmd==='fullscreen'){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}); }
-  send({event:'cmd'});
+document.getElementById('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f) return; v.src=URL.createObjectURL(f); pick.classList.remove('show'); v.load(); });
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){ e.preventDefault(); bc.postMessage({src:'player-cmd',cmd:'toggle'}); }
+  else if(e.key==='r'||e.key==='R') bc.postMessage({src:'player-cmd',cmd:'restart'});
+  else if(e.key==='f'||e.key==='F') document.dispatchEvent(new Event('dblclick'));
 });
 document.addEventListener('dblclick',()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); });
 let idleT; function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(()=>document.body.classList.add('idle'),2000); }
 document.addEventListener('mousemove',wake); wake();
-// test hook: ?t=12 shows that frame paused
-const q=new URLSearchParams(location.search); if(q.has('t')){ v.addEventListener('loadeddata',()=>{v.currentTime=parseFloat(q.get('t'));}); }
+// test hook: ?t=12 shows the timeline position 12 s (paused)
+const q=new URLSearchParams(location.search); if(q.has('t')){ T=parseFloat(q.get('t')); }
 </script></body></html>
