@@ -78,10 +78,10 @@ def dashed(c, p0, p1, color, width=4, dash=22, gap=16, alpha=1.0, prog_=1.0, off
 
 
 # ------------------------------------------------------------------ 1 HOOK
-def scene_hook(c, t, T):
+def scene_hook(c, t, T, head="Two AI coding helpers."):
     # headline
-    words = [("Two", WHITE), ("AI", WHITE), ("coding", WHITE), ("helpers.", WHITE)]
-    x = 960 - tw("Two AI coding helpers.", 92, "b") / 2
+    words = [(w_, WHITE) for w_ in head.split()]
+    x = 960 - tw(head, 92, "b") / 2
     for i, (wd, col) in enumerate(words):
         k = prog(t, 0.25 + i * 0.12, 0.5)
         with c.push(1, 0, 0, e_out(k), dy=(1 - e_out(k)) * 30):
