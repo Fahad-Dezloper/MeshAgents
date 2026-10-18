@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MeshAgents demo: teleprompter</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--fs:68px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#060606;color:#f3f3ef;font-family:-apple-system,"SF Pro Display",Inter,"Helvetica Neue",Arial,sans-serif;overflow:hidden}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6vh 7vw 14vh}
+body.mirror #stage{transform:scaleX(-1)}
+#top{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:18px 28px;font-size:20px;color:#8b908d;letter-spacing:.3px}
+body.mirror #top{transform:scaleX(-1)}
+#label{color:#34d399;font-weight:600}
+#lines{width:100%;max-width:1500px;text-align:center}
+.line{margin:0 0 .55em;line-height:1.22;font-weight:600;letter-spacing:-.5px;transition:opacity .35s,transform .35s,font-size .35s;opacity:.22;font-size:calc(var(--fs)*.62)}
+.line.prev{opacity:.16}
+.line.cur{opacity:1;font-size:var(--fs)}
+.line.next{opacity:.38}
+.line .w{color:#6b706d;transition:color .12s}
+.line.cur .w.done{color:#ffffff}
+.line.cur .w.now{color:#34d399}
+.line.prev .w,.line.next .w{color:inherit}
+#bar{position:fixed;left:0;right:0;bottom:0;height:10px;background:#141414}
+#fill{height:100%;width:0;background:#34d399}
+#ticks{position:absolute;inset:0}
+#ticks i{position:absolute;top:0;width:2px;height:100%;background:#060606}
+#count{position:fixed;inset:0;display:none;align-items:center;justify-content:center;font-size:30vh;font-weight:700;color:#34d399;background:rgba(6,6,6,.92);z-index:5}
+#count.show{display:flex}
+#big{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-size:44px;font-weight:600;text-align:center;z-index:4;background:#060606;padding:0 8vw}
+#big small{font-size:24px;color:#8b908d;font-weight:400;max-width:900px;line-height:1.4}
+#big.show{display:flex}
+#ctl{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;background:rgba(24,24,24,.92);border:1px solid #2a2a2a;border-radius:16px;padding:10px 12px;z-index:6;transition:opacity .4s}
+body.idle #ctl{opacity:0}
+body.idle{cursor:none}
+button{font:inherit;font-size:16px;color:#f3f3ef;background:#222;border:1px solid #333;border-radius:10px;padding:9px 14px;cursor:pointer}
+button:hover{background:#2c2c2c}
+button.go{background:#34d399;color:#04140d;border-color:#34d399;font-weight:700}
+#status{font-size:14px;color:#8b908d;padding:0 8px}
+#status b{color:#34d399;font-weight:600}
+</style></head><body class="idle">
+<div id="top"><div id="label">Ready</div><div id="clock">0:00 / 0:58</div></div>
+<div id="stage"><div id="lines"></div></div>
+<div id="bar"><div id="fill"></div><div id="ticks"></div></div>
+<div id="count"></div>
+<div id="big"></div>
+<div id="ctl">
+  <button id="openv">1. Open video window</button>
+  <button id="start" class="go">2. Start (Space)</button>
+  <button id="pause">Pause</button>
+  <button id="restart">Restart (R)</button>
+  <button id="smaller">A−</button><button id="larger">A+</button>
+  <button id="mirror">Mirror (M)</button>
+  <button id="cd">Countdown: on</button>
+  <span id="status">Video window: <b>not open</b> (practice mode)</span>
+</div>
+<script>
+/* ===== THE SCRIPT: edit the words here. t = second of the video where the line starts. ===== */
+const SCRIPT = {
+  duration: 58,
+  lines: [
+    {t: 0,  label: "Empty board",                 text: "My AI helpers kept breaking each other's work. So I built this."},
+    {t: 4,  label: "Helper 1 gets a job",         text: "MeshAgents is a shared memory for AI helpers. Helper one gets a job and a rule: no sqlite."},
+    {t: 11, label: "Helper 2 starts",             text: "Helper two starts a related job while helper one is still working. MeshAgents tells it what is going on."},
+    {t: 24, label: "The heads-up",                text: "Before helper two edits a file helper one changed, it gets a heads-up. No clash."},
+    {t: 31, label: "A brand new helper",          text: "Next day, a brand new helper starts. Nobody told it the rule, but it already knows: no sqlite. So it saves to a file."},
+    {t: 44, label: "What the next helper is told",text: "That small note is all it was told. Nobody wrote it."},
+    {t: 49, label: "The numbers",                 text: "The result: fewer clashes, helpers that remember, and twenty-nine percent less money and tokens for every good result."}
+  ]
+};
+/* ========================================================================================== */
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const D = SCRIPT.duration, L = SCRIPT.lines;
+let fs = parseInt(localStorage.getItem('tp_fs')||'68',10); document.documentElement.style.setProperty('--fs', fs+'px');
+let state = 'idle'; // idle | countdown | running | paused | ended
+let playerWin = null, playerMsg = null, playerSeen = 0;
+let t0 = 0, tPaused = 0, cdOn = true;
+const fmt = s => { s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+
+// build the lines
+const box = $('lines');
+L.forEach((ln,i)=>{
+  const p = document.createElement('p'); p.className='line'; p.dataset.i=i;
+  ln.words = ln.text.split(' ');
+  p.innerHTML = ln.words.map(w=>'<span class="w">'+w.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>').join(' ');
+  box.appendChild(p);
+});
+const ticks = $('ticks'); L.forEach(ln=>{ if(ln.t>0){ const i=document.createElement('i'); i.style.left=(ln.t/D*100)+'%'; ticks.appendChild(i); } });
+
+function connected(){ return playerWin && !playerWin.closed && (performance.now()-playerSeen)<1500; }
+function now(){
+  if(connected() && playerMsg && (state==='running'||state==='paused'||state==='ended')) return playerMsg.t;
+  if(state==='running') return (performance.now()-t0)/1000;
+  if(state==='paused'||state==='ended') return tPaused;
+  return 0;
+}
+function lineIndex(t){ let k=0; for(let i=0;i<L.length;i++) if(t>=L[i].t) k=i; return k; }
+function render(t){
+  const k = lineIndex(t);
+  const els = box.children;
+  for(let i=0;i<els.length;i++){
+    els[i].classList.toggle('cur', i===k);
+    els[i].classList.toggle('prev', i===k-1);
+    els[i].classList.toggle('next', i===k+1);
+    els[i].style.display = (i<k-1 || i>k+1) ? 'none' : '';
+  }
+  // word progress inside the current line, paced over its time window (finishes a little early so you are never behind)
+  const ln = L[k], end = (L[k+1]?L[k+1].t:D), span = Math.max(1,(end-ln.t)-0.6);
+  const frac = Math.min(1, Math.max(0,(t-ln.t)/span));
+  const wi = Math.floor(frac*ln.words.length);
+  const ws = els[k].children;
+  for(let j=0;j<ws.length;j++){ ws[j].classList.toggle('done', j<wi); ws[j].classList.toggle('now', j===wi && frac<1 && state!=='idle'); }
+  $('label').textContent = state==='idle' ? 'Ready: ' + (connected()?'video window connected':'practice mode') : ln.label;
+  $('clock').textContent = fmt(t)+' / '+fmt(D);
+  $('fill').style.width = Math.min(100,t/D*100)+'%';
+}
+function setStatus(){ const c = connected(); $('status').innerHTML = 'Video window: <b>'+(c?'connected':'not open')+'</b>'+(c?'':' (practice mode)'); }
+
+function sendP(cmd, extra){ if(playerWin && !playerWin.closed){ try{ playerWin.postMessage(Object.assign({src:'meshagents-teleprompter', cmd}, extra||{}),'*'); }catch(e){} } }
+window.addEventListener('message', e=>{ const m=e.data; if(m && m.src==='meshagents-player'){ playerMsg=m; playerSeen=performance.now(); if(m.ended && state==='running'){ finish(); } } });
+
+$('openv').onclick = ()=>{
+  playerWin = window.open('player.html','meshagents_player','width=1280,height=760');
+  if(!playerWin) alert('The browser blocked the pop-up. Allow pop-ups for this page and click again.');
+  showBig('Video window opened', 'Drag it to your recording screen, double-click it for full screen, then come back to this window and press Start.', 3500);
+};
+function showBig(title, sub, ms){ const b=$('big'); b.innerHTML = title + (sub?'<small>'+sub+'</small>':''); b.classList.add('show'); setTimeout(()=>b.classList.remove('show'), ms); }
+
+function start(){
+  if(state==='countdown') return;
+  if(state==='paused'){ resume(); return; }
+  if(state==='running') return;
+  state='countdown';
+  const go = ()=>{
+    $('count').classList.remove('show');
+    state='running'; t0=performance.now();
+    if(connected()) sendP('play',{at:0});
+  };
+  if(!cdOn){ go(); return; }
+  let n=3; $('count').textContent=n; $('count').classList.add('show');
+  const iv=setInterval(()=>{ n--; if(n>0){ $('count').textContent=n; } else { clearInterval(iv); $('count').textContent='GO'; setTimeout(go,350); } },1000);
+}
+function pause(){ if(state!=='running') return; tPaused=now(); state='paused'; sendP('pause'); }
+function resume(){ if(state!=='paused') return; t0=performance.now()-tPaused*1000; state='running'; sendP('resume'); }
+function restart(){ state='idle'; tPaused=0; sendP('restart'); $('count').classList.remove('show'); render(0); }
+function finish(){ tPaused=D; state='ended'; $('label').textContent='Done. Stop the recording.'; }
+
+$('start').onclick = start; $('pause').onclick = ()=> state==='paused'?resume():pause(); $('restart').onclick = restart;
+$('smaller').onclick = ()=>setFs(fs-6); $('larger').onclick = ()=>setFs(fs+6);
+$('mirror').onclick = ()=>document.body.classList.toggle('mirror');
+$('cd').onclick = ()=>{ cdOn=!cdOn; $('cd').textContent='Countdown: '+(cdOn?'on':'off'); };
+function setFs(v){ fs=Math.max(32,Math.min(140,v)); localStorage.setItem('tp_fs',fs); document.documentElement.style.setProperty('--fs', fs+'px'); }
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){ e.preventDefault(); if(state==='idle'||state==='ended') { if(state==='ended') restart(); start(); } else if(state==='running') pause(); else if(state==='paused') resume(); }
+  else if(e.key==='r'||e.key==='R') restart();
+  else if(e.key==='m'||e.key==='M') document.body.classList.toggle('mirror');
+  else if(e.key==='+'||e.key==='=') setFs(fs+6); else if(e.key==='-') setFs(fs-6);
+  else if(e.key==='f'||e.key==='F'){ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); }
+});
+let idleT; function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(()=>{ if(state==='running') document.body.classList.add('idle'); },2500); }
+document.addEventListener('mousemove',wake); wake();
+
+// test hook: ?t=15 shows the state at second 15 (paused); ?m=1 mirror
+if(q.has('t')){ state='paused'; tPaused=parseFloat(q.get('t')); if(q.get('m')) document.body.classList.add('mirror'); document.body.classList.remove('idle'); }
+
+function tick(){ if(state==='running' && !connected() && (performance.now()-t0)/1000>=D) finish(); setStatus(); render(now()); requestAnimationFrame(tick); }
+tick();
+</script></body></html>

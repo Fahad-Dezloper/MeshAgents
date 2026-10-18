@@ -25,3 +25,4 @@ evals/harbor/jobs/
 video/out/
 video/tmp/
 video/rec
+video/teleprompter/*.mp4

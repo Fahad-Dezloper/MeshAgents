@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>MeshAgents demo: video window</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{margin:0;height:100%;background:#000;color:#cfd3d0;font-family:-apple-system,"SF Pro Text",Inter,Arial,sans-serif;overflow:hidden}
+video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+body.idle{cursor:none}
+#pick{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;font-size:20px}
+#pick.show{display:flex}
+#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);font-size:15px;color:#8b908d;background:rgba(20,20,20,.7);padding:8px 16px;border-radius:999px;transition:opacity .4s}
+body.idle #hint,body.playing #hint{opacity:0}
+button,input{font:inherit}
+</style></head><body>
+<video id="v" src="MeshAgents-demo.mp4" muted playsinline preload="auto"></video>
+<div id="pick"><div>Choose the demo video file (MeshAgents-demo.mp4)</div><input id="file" type="file" accept="video/mp4,video/*"></div>
+<div id="hint">Drag this window to your recording screen, then double-click for full screen. Start from the teleprompter.</div>
+<script>
+const v = document.getElementById('v');
+const pick = document.getElementById('pick');
+v.muted = true;
+function send(extra){
+  if(!window.opener) return;
+  try{ window.opener.postMessage(Object.assign({src:'meshagents-player', t:v.currentTime||0, playing:!v.paused&&!v.ended,
+        dur:v.duration||0, ended:v.ended, ready:v.readyState>=2}, extra||{}), '*'); }catch(e){}
+}
+setInterval(send, 80);
+v.addEventListener('play',()=>{document.body.classList.add('playing','idle');});
+v.addEventListener('pause',()=>{document.body.classList.remove('playing');});
+['play','pause','seeked','ended','loadeddata'].forEach(ev=>v.addEventListener(ev,()=>send({event:ev})));
+v.addEventListener('error',()=>pick.classList.add('show'));
+document.getElementById('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return; v.src=URL.createObjectURL(f); pick.classList.remove('show'); v.load();
+});
+window.addEventListener('message',e=>{
+  const m=e.data; if(!m||m.src!=='meshagents-teleprompter') return;
+  if(m.cmd==='play'){ v.currentTime=Math.max(0,m.at||0); v.play().catch(()=>{}); }
+  if(m.cmd==='pause'){ v.pause(); }
+  if(m.cmd==='resume'){ v.play().catch(()=>{}); }
+  if(m.cmd==='restart'){ v.pause(); v.currentTime=0; }
+  if(m.cmd==='fullscreen'){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}); }
+  send({event:'cmd'});
+});
+document.addEventListener('dblclick',()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); });
+let idleT; function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(()=>document.body.classList.add('idle'),2000); }
+document.addEventListener('mousemove',wake); wake();
+// test hook: ?t=12 shows that frame paused
+const q=new URLSearchParams(location.search); if(q.has('t')){ v.addEventListener('loadeddata',()=>{v.currentTime=parseFloat(q.get('t'));}); }
+</script></body></html>
