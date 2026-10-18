@@ -15,7 +15,7 @@ Example: you tell session 1 "never use sqlite, the server is read-only". Tomorro
 
 ## What MeshAgents does
 - **Warns before clashes.** If another session is working on the file you are about to edit, you are told first.
-- **Remembers what changed and why.** Changes are noted automatically. If a note turns out to be wrong, MeshAgents shows everything built on it.
+- **Remembers what changed and why.** Changes are noted automatically, including edits made through shell commands (`sed -i`, `cat > file`, small scripts), best effort. If a note turns out to be wrong, MeshAgents shows everything built on it.
 - **Hands notes to the next session**, including rules people stated once in conversation ("never use sqlite").
 - **Shows it on a live board**, a simple web page: who is working on what, and where trouble is.
 

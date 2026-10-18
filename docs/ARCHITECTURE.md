@@ -92,3 +92,13 @@ Python definitions and call sites:
   keyword-only parameter or `*args`/`**kwargs`). Only then does one traversal return the callers in other
   files, joined with the live leases on those files. Compatible changes produce no message.
 - **Limits**: Python only; no type inference; return-shape changes are not detected.
+
+## Edits made through shell commands (added later)
+The edit hooks only saw the Write/Edit/MultiEdit/NotebookEdit tools. Some models change files only through Bash
+(`sed -i`, `cat > f <<E`, `python3 - <<E ... open(p,'w')`), so the same hooks now also look at Bash commands
+(`capture/shellwrites.py`, `capture/shellsnap.py`, switch `shell_writes`, env `BATON_SHELL_WRITES=0`). Before a
+write-like command: its target files are read from the command text (redirects, tee, sed -i, cp/mv, heredoc scripts)
+and go through the normal collision check; and a snapshot of up to 600 small source files is saved in the per-user
+temp dir. After it: files whose (mtime, size) changed are the real edits; they get the same pipeline as tool edits
+(touch, decisions, code-graph re-index and "callers elsewhere" warning). Projects over the budget (600 files, about
+80 ms) skip the snapshot and only the named targets are touched. Everything is fail-open and best effort.
