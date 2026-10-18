@@ -66,5 +66,7 @@ export BATON_FALKORDB_PORT=6379
 ```
 
 Set these in the environment Claude Code is started from; hooks and the MCP server inherit them.
-Connections are plain Redis protocol with short timeouts (1 s connect for hooks); passwords and TLS
-are not configurable yet, so use a private network or a tunnel (`ssh -L 6379:localhost:6379 host`).
+Connections use the Redis protocol with short timeouts (1 s connect for hooks). For a remote FalkorDB set
+`BATON_FALKORDB_HOST`, `BATON_FALKORDB_PORT`, `BATON_FALKORDB_PASSWORD` (and `BATON_FALKORDB_USERNAME`), and
+`BATON_FALKORDB_SSL=1` for TLS. These are not covered by automated tests against a real TLS server yet, so
+prefer a private network or a tunnel (`ssh -L 6379:localhost:6379 host`) for anything important.
