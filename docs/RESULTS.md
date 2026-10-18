@@ -243,3 +243,39 @@ level set was chosen after earlier rounds, so treat the statistics as descriptiv
   Claude Code session (the PostToolUse message reached the model and was relayed), and the dashboard's
   code map. Not verified: an outcome benefit. A level built around hidden call sites would be needed.
 
+
+# Round 6: collision test at n = 10 (both sides run fresh, same time, same code)
+
+Run: 2026-10-18, 14:38-15:30 IST, prefix clash2, 3 trials at a time. Levels L1, L2, L3, L4, L6, L7, L8, L9, L10
+(L5 cannot be passed by design), baseline vs the shipped hooks-only baton (with the code graph), 10 trials per
+level and side = 90 per side, 0 failed jobs, 0 hook errors. Pooled statistics: `evals/harbor/stats.py`.
+
+| Level | No baton | Baton | Fisher p |
+|---|---|---|---|
+| L1 | 6/10 | 9/10 | 0.30 |
+| L2 | 9/10 | 10/10 | 1.0 |
+| L3 | 0/10 | 9/10 | < 0.001 |
+| L4 | 3/10 | 7/10 | 0.18 |
+| L6 | 0/10 | 1/10 | 1.0 |
+| L7 | 9/10 | 10/10 | 1.0 |
+| L8 | 9/10 | 9/10 | 1.0 |
+| L9 | 7/10 | 10/10 | 0.21 |
+| L10 | 5/10 | 7/10 | 0.65 |
+| **All (90 per side)** | **48/90 = 53% (43-63%)** | **72/90 = 80% (71-87%)** | **< 0.001** |
+
+- Pooled difference: +26.7 points, bootstrap 95% CI +13.3 to +40.4, Fisher exact p < 0.001.
+- Cost: $0.0085 vs $0.0090 per trial (+6%, permutation p = 0.42, not significant); cost per clean run
+  $0.0159 ($0.0128-$0.0203) vs $0.0113 ($0.0097-$0.0133), about 29% lower with baton.
+- Better with baton on 7 of 9 levels, equal on L8, and L6 is not fixed (1/10). Only L3 is significant on its own.
+- The fresher levels L8-L10 alone: 21/30 vs 26/30 (not significant by itself).
+
+## Read this before quoting it
+- The tasks are constructed to make sessions collide. A 2026 study of real merged changes found only 1 in 417
+  with this kind of breakage (docs/research/02-evidence-and-benchmarks.md), so real projects will see far fewer
+  collisions than this test; the result shows baton helps when collisions happen, not how often they happen.
+- Levels L1-L5 were used to tune earlier versions; L6 was edited after results; L8-L10 are newer but the product
+  was tuned with their results visible. The pooled number mixes tuned and untuned levels.
+- One small project, one cheap model, tasks and scoring written by the same author.
+- L6 (two sessions each adding the same stock reservation) is still unsolved; the plugin's warnings arrive too
+  late for that kind of overlap.
+

@@ -40,12 +40,13 @@ More help: [docs/QUICKSTART.md](docs/QUICKSTART.md).
 Short, honest answer: the machinery works; the proof that it makes your results better is not strong yet.
 
 **Proven**
+- **Fewer clashes when sessions collide.** In a fresh 180-run test, 72 of 90 runs came out clean with baton against 48 of 90 without (80% vs 53%; the gap is +27 points, 95% range +13 to +40, p < 0.001). Each clean run cost about 29% less ($0.0113 vs $0.0159) because fewer runs had to be redone. Details and limits: [docs/RESULTS.md](docs/RESULTS.md), round 6.
 - Warnings really reach real concurrent sessions with nothing typed, with no hook errors in the evaluation runs.
 - Taking back a wrong note finds exactly the notes built on it (25 generated test graphs, all found, none wrong, about 3 ms).
 - The default setup costs about the same as using no plugin (tokens 1.00x, turns 0.99x, estimated cost 1.04x).
 
 **Not proven**
-- That sessions finish with fewer clashes. More runs ended clean with baton (20 of 21 vs 15 of 21 on a held-out set), but p = 0.093, above our own p < 0.05 bar. We do not claim an effect.
+- That this holds on real projects. The collision tests are built to make sessions collide; a 2026 study of real merged changes found only 1 in 417 with this kind of breakage. One small test project, one cheap model. One test (L6, two sessions both adding the same stock reservation) is not fixed.
 - That the "these callers will break" warning helps: it fired once in 40 trials.
 - That file-pair hints prevent bugs (they predict which files change together; they do not measure bugs avoided).
 
@@ -186,7 +187,7 @@ Write-ups with all caveats: [docs/RESULTS.md](docs/RESULTS.md), [docs/RESULTS-HE
 | Question | Result | Verdict |
 |---|---|---|
 | Collision avoidance, held-out L8-L10, clean runs (of 21) | baseline 15, plugin 20 (p = 0.093; failed checks per trial 0.48 vs 0.10, p = 0.108) | direction favourable, **not significant** (bar was p < 0.05) |
-| Collision avoidance, tuned L1-L5 (of 25) | baseline 12, plugin 14 | tuned on, weak evidence |
+| Collision avoidance, 9 levels x 10 runs per side (fresh, same time, same code) | clean runs 72/90 (80%) vs 48/90 (53%); +27 points (95% CI +13 to +40), p < 0.001; cost per clean run $0.0113 vs $0.0159; L6 unsolved (1/10) | constructed collisions; tuned and untuned levels mixed; one cheap model |
 | Cost, hooks-only vs no plugin, 56 trials per arm | cache-read 1.00x, turns 0.99x, cost 1.04x; clean runs 41/56 vs 32/56 (p = 0.11); about 19% lower estimated cost per clean result | parity; post-hoc comparison |
 | Cost, first version with MCP tools | +37% cache-read tokens, +23% turns | why hooks-only is the default |
 | Code graph "callers will break" warning | fired once in 40 trials | mechanism verified, **no outcome benefit shown** |
