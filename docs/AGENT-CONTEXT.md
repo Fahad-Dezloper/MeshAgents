@@ -37,6 +37,18 @@ time on those.
 - The user's verdict: the numbers are not compelling enough. The goal now is real, honest stats showing the
   product is worth keeping: saves tokens, money, time, and prevents breakage.
 
+## Added after the first version of this briefing (2026-10-18 afternoon)
+- Notes that carry over: handoff keeps the full original request (Task.spec); rules stated by the user in
+  conversation are captured as Decision kind 'rule' (core/rules.py) and shown to the next session.
+- "Files that change together": CO_CHANGED edges from git history (core/cochange.py); offline benchmark on 6
+  real repos: hint right about 2 times in 3 when shown, shown for about a third of edits (docs/RESULTS-COCHANGE.md).
+- Relay benchmark (evals/relay, docs/RESULTS-RELAY.md): sessions one after another, 3 arms (no memory, a plain
+  HANDOFF.md notes file, baton), tasks R1-R5. Full run (150 trials) started 14:08 IST as prefix relay1.
+- evals/harbor/stats.py gives pass rates with confidence intervals, exact tests and cost per success.
+- Research notes: docs/research/01-05. Main rival: airspace (real-repo benchmark, 9/9 vs 0/9, live site, video).
+- Plan: relay run (~3h), then re-run the clash suite with larger n, then write up real numbers. Product code is
+  frozen while evaluations run (image baton-eval:latest is rebuilt only after changes).
+
 ## Rules for working here
 - Simple words when talking to the user (they asked for this; see memory). Short, concrete.
 - Never fabricate numbers; every claim needs a recorded run. Report negative results too.
