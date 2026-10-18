@@ -1,40 +1,128 @@
 # baton
 
-Shared task, decision and handoff graph for parallel coding sessions, built on **FalkorDB**.
+**A shared notebook for Claude Code sessions that work on the same project, so they stop stepping on each other.**
 
-**Hackathon:** WeMakeDevs x FalkorDB "Graph Hacks: Context for AI Agents". **Track 2: Agent Memory and Coordination.**
+Built on FalkorDB for the WeMakeDevs x FalkorDB "Graph Hacks" hackathon, Track 2 (Agent Memory and Coordination).
 
-Parallel sessions on one repository collide silently: one changes a function signature while
-another builds on the old one, two sessions pick different storage engines, three sessions
-implement the same ticket. And when a session ends, the next one starts from zero.
+## The problem
+- Two coding sessions work on one project and cannot see each other.
+- One changes a function; the other keeps calling it the old way. Or both fix the same thing.
+- When a session ends, the next one starts knowing nothing, even about rules you told the last one.
 
-baton keeps a graph of **who is working on what, what has been decided, and what each decision was
-based on**. It installs as a Claude Code plugin (hooks only by default; an MCP server is optional): sessions are warned before
-they step on each other, decisions are captured from edits with no commands typed, and a handoff
-is written when a session stops.
+Example: you tell session 1 "never use sqlite, the server is read-only". Tomorrow, session 2 happily adds sqlite.
+
+## What baton does
+- **Warns before clashes.** If another session is working on the file you are about to edit, you are told first.
+- **Remembers what changed and why.** Changes are noted automatically. If a note turns out to be wrong, baton shows everything built on it.
+- **Hands notes to the next session**, including rules people stated once in conversation ("never use sqlite").
+- **Shows it on a live board**, a simple web page: who is working on what, and where trouble is.
+
+Nothing to type while you work. It runs as a Claude Code plugin through hooks.
+
+## See it in 2 minutes
+No model and no API key needed. You need Docker and Python 3.10+.
+```sh
+git clone <repo-url> baton && cd baton
+docker compose up -d && python3 -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/baton doctor && .venv/bin/python demo/run_demo.py
+```
+The demo plays out two sessions on a small shop project and prints what each one would be told. Then open
+http://localhost:3000, pick the graph `baton_demo`, and paste in the queries from [`demo/queries.cypher`](demo/queries.cypher).
+To see the live board: `.venv/bin/baton ui`, then open http://127.0.0.1:7777.
+
+To use it on your own project:
+```sh
+claude --plugin-dir /path/to/baton/plugin
+```
+More help: [docs/QUICKSTART.md](docs/QUICKSTART.md).
+
+## Does it work?
+Short, honest answer: the machinery works; the proof that it makes your results better is not strong yet.
+
+**Proven**
+- Warnings really reach real concurrent sessions with nothing typed, with no hook errors in the evaluation runs.
+- Taking back a wrong note finds exactly the notes built on it (25 generated test graphs, all found, none wrong, about 3 ms).
+- The default setup costs about the same as using no plugin (tokens 1.00x, turns 0.99x, estimated cost 1.04x).
+
+**Not proven**
+- That sessions finish with fewer clashes. More runs ended clean with baton (20 of 21 vs 15 of 21 on a held-out set), but p = 0.093, above our own p < 0.05 bar. We do not claim an effect.
+- That the "these callers will break" warning helps: it fired once in 40 trials.
+- That file-pair hints prevent bugs (they predict which files change together; they do not measure bugs avoided).
+
+**Does a new session start smarter? (results coming)**
+<!-- TODO(lead): replace this block with results from docs/RESULTS-RELAY.md once the relay run is analysed.
+     The test is pre-registered there: 150 trials, baton vs no memory vs a hand-kept notes file. -->
+> TODO: pending. The test is written down in advance in [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md). Results will be added here, good or bad.
+
+Small samples, one cheap model, one test project, tasks and scoring written by the same author. Details: [For the technical reader](#for-the-technical-reader).
+
+Want to see how FalkorDB is used, and why the graph matters? Read [docs/FALKORDB-DEEP-DIVE.md](docs/FALKORDB-DEEP-DIVE.md).
+
+---
+
+# For the technical reader
 
 ## Why the graph matters
 Without FalkorDB there is nothing to ask. The product answers graph questions:
 - *Who holds a live lease on a file I am about to edit?* (Task - TOUCHES -> Artifact)
 - *What changed in files near or imported by this one?* (Decision - ABOUT -> Artifact)
-- *What was this decision based on, and what breaks if that fact is wrong?* (variable-length
-  BASED_ON traversals, used for both `why` and retraction)
+- *What was this decision based on, and what breaks if that fact is wrong?* (variable-length `BASED_ON` traversals, used for both `why` and retraction)
+- *Which functions call the one I just changed, and who is working in those files?* (Symbol - CALLS -> Symbol, joined to leases)
+- *Which files usually change with this one?* (Artifact - CO_CHANGED -> Artifact, learned from git history)
 - *Which tasks are ready, with all dependencies done?* (DEPENDS_ON)
-- Claims are atomic because FalkorDB serializes writes per graph (verified with a race test and a
-  negative control, [docs/SPIKES.md](docs/SPIKES.md)).
+- Claims are atomic because FalkorDB serializes writes per graph (race test with a negative control: [docs/SPIKES.md](docs/SPIKES.md)).
+
+In-depth page for each of these, with measurements: [docs/FALKORDB-DEEP-DIVE.md](docs/FALKORDB-DEEP-DIVE.md).
+
+## What it does, by feature
+- **Collision warnings** before edits (live leases and recent decisions on the same or nearby files). Policy `warn` by default; `ask`/`deny` opt-in.
+- **Decisions captured from edits** (interface, config, storage, rename, dependency changes), derived deterministically from the edit payload, no model call.
+- **Handoff on stop**, with the last test result; the next session is briefed on live sessions, recent decisions and the latest handoff.
+- **Rules captured from conversation** (`src/baton/core/rules.py`): sentences with clear markers ("never", "from now on", "FYI", "we tried"...) in a user prompt are stored as `Decision {kind: 'rule'}` after secret redaction, at most 4 per prompt, and shown to later sessions for 30 days. Conservative regex, no model call. Effect on outcomes is being measured in [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md).
+- **Retraction with blast radius** (`baton retract`, `baton why`).
+- **Code symbol graph** (Python only): definitions and call sites, resolved from imports and definitions, never guessed. After an edit that changes a call shape (new required parameter, reorder, removal, rename), the session is told which callers elsewhere will break and which live sessions are in those files. Compatible changes stay silent. `BATON_CODE_GRAPH=0` turns it off.
+- **Co-change hints from git history** (`core/cochange.py`): `(:Artifact)-[:CO_CHANGED {n, ratio}]->(:Artifact)` built from the newest 800 commits, incremental, time-boxed to 2 s. One line before an edit: "Files that usually change with X: ...". The hook uses ratio >= 0.7, n >= 3. Turn off with `BATON_COCHANGE=0`. `baton together <path>` lists partners. A PageRank pass over `CALLS` (at most every 6 hours, never per hook) marks heavily depended-on files. Benchmark on six open-source repos: [docs/RESULTS-COCHANGE.md](docs/RESULTS-COCHANGE.md).
+- **Dashboard** `baton ui` ([docs/UI.md](docs/UI.md)): read-only (`ro_query` only), localhost, standard library only. Board of live sessions, decision feed, provenance graph with retraction preview, code map, impact of recent changes.
+
+## Commands
+```sh
+baton doctor                         # check the install, print the fix for anything missing
+baton ui [--port 7777]               # read-only dashboard at http://127.0.0.1:7777
+baton status [--json]                # live sessions, leases, shared files, latest decisions
+baton why <id>                       # what a decision was based on, and what depends on it
+baton retract <id> --reason "..."    # asks first, prints what became tainted
+baton handoff                        # latest handoff briefing
+baton impact <path>                  # callers of a file's public symbols, and who is in those files
+baton together <path>                # files that usually change with this one
+baton gc                             # prune old data
+```
+All commands pick the workspace the way the hooks do (`--workspace` or `BATON_WORKSPACE` override).
+
+## Hooks only by default, MCP optional
+Everything is automatic through six hooks (session start, prompt, pre-tool, post-tool, stop, session end). Adding MCP tools made sessions call
+them redundantly (about 1.4 extra tool calls per session) and cost 9-37% more tokens ([measurement](docs/RESULTS-TOKENS.md)), so they are off by default.
+Optional tools for explicit use (13: create_task, get_ready_tasks, claim_task, renew_lease, complete_task, release_task, post_decision,
+check_conflicts, add_finding, why, retract, handoff_export, handoff_import):
+```sh
+claude mcp add baton -- /path/to/baton/plugin/bin/baton-mcp
+```
+Settings (`.baton.json` in the project, or environment): `policy` = `warn` (default) | `ask` | `deny`; `enabled`; `lease_seconds`; `capture`;
+`cochange`. `BATON_DISABLED=1` turns it off. **Fails open:** if the store is unreachable, hooks print nothing and never block the session.
+A hook call takes roughly 0.1-0.15 s (cold process); the graph part is a millisecond or two.
 
 ## Data model
-One graph per workspace (`baton_<workspace>`), so one workspace cannot address another.
+One graph per workspace (`baton_<workspace>`), so one workspace cannot address another. Diagram and per-feature mapping: [docs/FALKORDB-DEEP-DIVE.md](docs/FALKORDB-DEEP-DIVE.md).
 
 | Node | Key properties |
 |---|---|
 | `Actor` | id (session id), kind, started_at |
 | `Task` | id, goal, goal_key, status (open/claimed/done/released), owner, lease_until, version |
-| `Decision` | id, text, kind (interface/config/storage/rename/note/...), status (open/superseded/retracted/tainted), author |
+| `Decision` | id, text, kind (interface/config/storage/rename/rule/note/...), status (open/superseded/retracted/tainted), author |
 | `Finding` | id, text, source, confidence, status |
-| `Artifact` | path |
-| `Handoff` | id, note |
+| `Artifact` | path (also `cc_commits`, `hot`, `indexed_hash` for the indexes) |
+| `Handoff` | id, note, summary |
 | `Symbol` | id (`path::qualified.name`), name, kind (function/method/class/module), sig, path, line |
+| `CoChangeIndex` | bookkeeping for the git-history index (last commit, lock) |
 
 | Relationship | Meaning |
 |---|---|
@@ -46,11 +134,12 @@ One graph per workspace (`baton_<workspace>`), so one workspace cannot address a
 | `(Decision)-[:SUPERSEDES]->(Decision)` | replacement |
 | `(Handoff)-[:INCLUDES]->(Task \| Decision \| Finding \| Artifact)` | session handoff packet |
 | `(Artifact)-[:DEFINES]->(Symbol)` | what a file defines |
-| `(Symbol)-[:CALLS]->(Symbol)` | resolved call sites (from imports and definitions, never guessed) |
+| `(Symbol)-[:CALLS]->(Symbol)` | resolved call sites |
+| `(Artifact)-[:CO_CHANGED {n, ratio}]->(Artifact)` | changed in the same commit, from git history |
 
 ## Key Cypher
-All queries are named and parameterized in [`src/baton/graph/queries.py`](src/baton/graph/queries.py);
-model output never becomes Cypher.
+All coordination queries are named and parameterized in [`src/baton/graph/queries.py`](src/baton/graph/queries.py); the code-graph and
+co-change queries sit beside the code that uses them (`core/codegraph.py`, `core/cochange.py`). Model output never becomes Cypher.
 
 Atomic claim (at most one caller gets a row; expired leases can be taken over; dependencies must be done):
 ```cypher
@@ -67,15 +156,7 @@ MATCH (t:Task {status: 'claimed'})-[:TOUCHES]->(a:Artifact)
 WHERE a.path IN $paths AND t.owner <> $actor_id AND t.lease_until >= $now
 RETURN t, a.path
 ```
-Recent changes by others to files near, or imported by, the one being edited:
-```cypher
-MATCH (d:Decision)-[:ABOUT]->(a:Artifact)
-WHERE d.author <> $actor_id AND d.status IN ['open', 'tainted'] AND d.kind <> 'note'
-  AND coalesce(d.updated_at, d.created_at) >= $since
-  AND a.path <> $path AND (a.path STARTS WITH $prefix OR a.path IN $near)
-RETURN d, a.path ORDER BY coalesce(d.updated_at, d.created_at) DESC LIMIT 20
-```
-Callers elsewhere that a call-shape change breaks (the code graph; used right after an edit):
+Callers elsewhere that a call-shape change breaks (code graph, used right after an edit):
 ```cypher
 MATCH (c:Symbol)-[:CALLS]->(s:Symbol)
 WHERE s.path = $path AND s.qual IN $changed AND c.path <> $path
@@ -83,122 +164,45 @@ RETURN s.qual, c.path, c.qual ORDER BY c.path
 ```
 Blast radius of a wrong fact (everything derived from it, transitively), used by `retract`:
 ```cypher
-MATCH (root:Finding {id: $id})<-[:BASED_ON*1..8]-(d:Decision) RETURN DISTINCT d
+MATCH (root:Finding {id: $id})<-[:BASED_ON*1..]-(d:Decision) RETURN DISTINCT d
 ```
-
-## Try it in two minutes (no model, no API key)
-```sh
-git clone <repo-url> baton && cd baton
-docker compose up -d && python3 -m venv .venv && .venv/bin/pip install -e .
-.venv/bin/baton doctor && .venv/bin/python demo/run_demo.py
-```
-Needs Docker, Python 3.10+. Then open http://localhost:3000, select graph `baton_demo` and run the
-queries in [`demo/queries.cypher`](demo/queries.cypher). `baton doctor` checks the install and prints
-the fix for anything missing; more in [docs/QUICKSTART.md](docs/QUICKSTART.md).
-
-The demo script drives the same hook handlers the plugin uses, with the same payload shapes, and
-prints what each session would be told: recorded decisions, a cross-file warning, a same-file
-collision, a next-day handoff briefing, and a retraction that taints derived decisions.
-
-## See what your sessions are doing
-```sh
-baton ui                  # read-only dashboard at http://127.0.0.1:7777 (localhost only, no dependencies)
-baton status              # live sessions, leases, shared files, latest decisions (--json available)
-baton why <id>            # what a decision was based on, and what depends on it
-baton retract <id> --reason "..."   # asks first, prints what became tainted
-baton handoff             # latest handoff briefing
-```
-The dashboard shows a tower of live sessions with collision badges, contested files, a decision feed,
-a provenance graph with a retraction preview, the code map and the impact of recent changes. See
-[docs/UI.md](docs/UI.md).
-
-## Use with Claude Code
-```sh
-claude --plugin-dir /path/to/baton/plugin     # use it in any project; hooks + tools, no commands to remember
-```
-**Code graph.** On the first session baton indexes the project's Python definitions and call sites into
-the graph (incrementally afterwards). When a session changes how a function is called (a new required
-parameter, reordered or removed parameters, a rename), it is told right after the edit which callers
-elsewhere will break and which live sessions are working in those files. Compatible changes (a new
-parameter with a default) stay silent. Calls are resolved from imports and definitions only; a call on
-an object of unknown type is not linked. `BATON_CODE_GRAPH=0` turns it off. Measured honestly: tests and a real session verify the mechanism, but in 40 evaluation
-trials the impact warning fired once, so no outcome benefit is claimed for it yet
-([docs/RESULTS.md](docs/RESULTS.md), round 5).
-
-Automatic: a session is briefed on other live sessions and the latest handoff; edits are checked
-against other sessions' work; file changes and renames are recorded; interface, config and
-dependency changes become decisions on their own (derived deterministically from the edit payload,
-no model call); a handoff with the last test result is written when the session stops.
-
-**Hooks-only by default, on purpose.** Everything above is automatic. Adding the MCP tools made
-sessions call them redundantly (about 1.4 extra tool calls per session) and cost 9-37% more tokens
-([measurement](docs/RESULTS-TOKENS.md)). Optional MCP tools for explicit use (13: create_task,
-get_ready_tasks, claim_task, renew_lease, complete_task, release_task, post_decision, check_conflicts,
-add_finding, why, retract, handoff_export, handoff_import):
-```sh
-claude mcp add baton -- /path/to/baton/plugin/bin/baton-mcp
-```
-
-Settings (`.baton.json` in the project, or environment): `policy` = `warn` (default) | `ask` |
-`deny`; `enabled`; `lease_seconds`; `capture`. `BATON_DISABLED=1` turns it off. **Fails open:** if the
-store is unreachable, hooks print nothing and never block the session. Each hook call takes roughly 0.1-0.15 s.
-
-Tests: `.venv/bin/python -B -m unittest discover -s tests -t .` (155 tests, run against a live FalkorDB v4.22.1; also passed on 6.0.2).
 
 ## Evaluation (honest summary)
-Parallel Claude Code sessions (cheap model) are started at the same moment on one shared checkout
-with overlapping tickets. A scripted checker scores whether the combined result is collision-free.
-Harness, tasks and checkers: [`evals/`](evals). Write-ups with all caveats:
-[docs/RESULTS.md](docs/RESULTS.md) (rounds 1-3), [docs/RESULTS-HELDOUT.md](docs/RESULTS-HELDOUT.md),
-[docs/RESULTS-PROVENANCE.md](docs/RESULTS-PROVENANCE.md).
+Parallel Claude Code sessions (cheap model, `claude-haiku-5-5`) are started at the same moment on one shared checkout with overlapping
+tickets. A scripted checker scores whether the combined result is collision-free. Harness, tasks and checkers: [`evals/`](evals).
+Write-ups with all caveats: [docs/RESULTS.md](docs/RESULTS.md), [docs/RESULTS-HELDOUT.md](docs/RESULTS-HELDOUT.md),
+[docs/RESULTS-TOKENS.md](docs/RESULTS-TOKENS.md), [docs/RESULTS-PROVENANCE.md](docs/RESULTS-PROVENANCE.md),
+[docs/RESULTS-COCHANGE.md](docs/RESULTS-COCHANGE.md), [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md).
 
-**Collision avoidance.** Levels L1-L5 were tuned on over three rounds, so the fresh result is the
-held-out set L8-L10 (written and validated before any run, success metrics stated in advance, plugin
-unchanged, 7 attempts per cell):
-
-| | Baseline | Plugin v3 |
+| Question | Result | Verdict |
 |---|---|---|
-| Held-out L8-L10, clean runs (of 21) | 15 | **20** |
-| Held-out, failed checks per trial | 0.48 | **0.10** |
-| Tuned L1-L5, clean runs (of 25) | 12 | 14 |
+| Collision avoidance, held-out L8-L10, clean runs (of 21) | baseline 15, plugin 20 (p = 0.093; failed checks per trial 0.48 vs 0.10, p = 0.108) | direction favourable, **not significant** (bar was p < 0.05) |
+| Collision avoidance, tuned L1-L5 (of 25) | baseline 12, plugin 14 | tuned on, weak evidence |
+| Cost, hooks-only vs no plugin, 56 trials per arm | cache-read 1.00x, turns 0.99x, cost 1.04x; clean runs 41/56 vs 32/56 (p = 0.11); about 19% lower estimated cost per clean result | parity; post-hoc comparison |
+| Cost, first version with MCP tools | +37% cache-read tokens, +23% turns | why hooks-only is the default |
+| Code graph "callers will break" warning | fired once in 40 trials | mechanism verified, **no outcome benefit shown** |
+| Retraction, 25 generated graphs (~203 items each) | precision 1.000, recall 1.000, ~3 ms; grep over a flat file: recall 0.65 with mixed citations, 0 with paraphrased | exact if `based_on` links were recorded (recall 0.73 if 20% missing) |
+| Co-change hints, 6 open-source repos, held-out 30% | hook setting (ratio 0.7, n 3): coverage 17.2%, precision@3 73.1%, noise 24.2%; the looser `baton together` default (0.5): 33.7%, 57.0%, 33.5%; same-directory guess: 29.8% precision | predicts co-changing files, not bugs avoided; about a third of hints miss; quality varies by repo |
+| Does a new session start smarter? | pending | see TODO above |
 
-- Held-out difference: Fisher p = 0.093, failed checks p = 0.108. The pre-stated bar was p < 0.05, so
-  **we do not claim an effect**; the direction is favourable and consistent across rounds.
-- Known defect: a live-session warning can make a session defer too much. In two L2 trials a session
-  saw another session's lease on `db.py`, chose not to edit it, and wrote code calling a function
-  that never existed (baseline edited the file in 5/5). Duplicate-ticket tasks (L5) are not solved (0/5).
-- Sessions that did nothing outside L5: baseline 0/160, plugin v3 1/94.
-
-**Retraction and handoff** (deterministic, [`evals/provenance/`](evals/provenance)). Retracting a
-finding tainted exactly its derived decisions on 25 generated graphs (precision and recall 1.0, ~3 ms).
-Grep over a flat notes file matches that only when every note cites its source by id or verbatim
-quote (recall 0.65 with mixed citations, 0 with paraphrased ones). The graph is only as good as the
-recorded `based_on` links (recall 0.73 if 20% are missing). Handoffs keep tainted and interface
-decisions first; beyond ~50 decisions most notes are dropped by the size budget.
-
-**Token and time cost** ([docs/RESULTS-TOKENS.md](docs/RESULTS-TOKENS.md)). The first versions loaded
-optional MCP tools that models called redundantly: +37% cache-read tokens and +23% turns. The shipped
-default is now hooks-only. Over 56 trials per arm it matches no plugin on tokens and turns
-(cache-read 1.00x, turns 0.99x, cost 1.04x), with 41/56 clean runs against 32/56 (p = 0.11, not
-significant) and about 19% lower estimated cost per clean result. Per-session time is within 6%.
-These variants were chosen after seeing earlier rounds, so the comparison is post-hoc. An opt-in
-end-of-session re-check (`BATON_STOP_CHECK=1`) did not help L4 or L6 and costs extra turns; it
-helped L10 (7/7 vs 3/7, p = 0.07).
-
-The mechanism itself is verified: real warnings reach real concurrent sessions with nothing typed,
-with zero hook errors across the evaluation trials.
+Known defect: a live-session warning can make a session defer too much (in two L2 trials a session wrote code calling a function that
+never existed). Duplicate-ticket tasks (L5) are not solved (0/5). The optional end-of-session re-check (`BATON_STOP_CHECK=1`, off) did
+not help L4 or L6 and costs extra turns.
 
 Limits: small samples, one model, one fixture project, tasks and scorer written by the same author.
 
+## Tests
+`.venv/bin/python -B -m unittest discover -s tests -t .` runs 214 tests against a live FalkorDB (v4.22.1 pinned in `docker-compose.yml`; the claim test also passed on 6.0.2).
+
 ## Layout
 ```
-src/baton/        core library, MCP server, hook entry points
-plugin/           Claude Code plugin (manifest, hooks; optional-mcp.json for the MCP server)
+src/baton/        core library, graph queries, capture, hook entry points, CLI
 src/baton/ui/     read-only dashboard (stdlib only)
+src/baton/mcp_server/  optional MCP server
+plugin/           Claude Code plugin (manifest, hooks; optional-mcp.json for the MCP server)
 demo/             scripted scenario and Browser queries
-evals/clash/      collision tasks, fixture project and checker
-evals/harbor/     containerised runner for the evaluation
-docs/             plan, architecture, spikes, results
+evals/            collision tasks and checker (clash), containerised runner (harbor), provenance, cochange, relay benchmarks
+docs/             plan, architecture, spikes, results, FalkorDB deep dive
 tests/            unit and integration tests
 ```
 
@@ -206,7 +210,8 @@ tests/            unit and integration tests
 This project was designed and built with substantial help from an AI coding assistant (Claude
 Code), including code, tests, evaluation harness and documentation. The author directed the work and
 reviewed the results; the evaluation numbers above come from runs recorded in this repository.
-All data is synthetic (the `shop` fixture) or generated by the runs themselves.
+All data is synthetic (the `shop` fixture) or generated by the runs themselves, apart from the co-change
+benchmark, which reads the public git history of six open-source repositories.
 
 ## Known limits
 - Text from one session is shown to other sessions: secrets are redacted by pattern (best effort,
@@ -214,7 +219,8 @@ All data is synthetic (the `shop` fixture) or generated by the runs themselves.
   session in the workspace.
 - Sessions in different project directories or git worktrees use separate graphs by default; set
   `BATON_WORKSPACE` to share one. MCP tools expect project-relative paths.
-- No password or TLS for a remote FalkorDB yet.
+- The code graph is Python only. Rule capture is keyword-based and misses unusual phrasing.
+- FalkorDB password and TLS can be set with `BATON_FALKORDB_PASSWORD` / `BATON_FALKORDB_SSL`; not covered by tests, and docs/QUICKSTART.md still says they are not configurable.
 
 ## License
 MIT, see [LICENSE](LICENSE).
