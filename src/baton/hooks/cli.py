@@ -56,10 +56,10 @@ def main(argv: Optional[List[str]] = None, stdin=None) -> int:
         if not cfg.enabled:
             return 0
         if event in ("pre-tool", "post-tool"):
-            from baton.hooks.events import edit_paths
+            from baton.hooks.events import edit_paths, is_shell_candidate
 
-            if not edit_paths(payload, project):
-                return 0  # not an edit or rename: skip the database entirely
+            if not edit_paths(payload, project) and not is_shell_candidate(payload, cfg):
+                return 0  # not an edit, rename or shell write: skip the database entirely
         workspace = os.environ.get("BATON_WORKSPACE") or default_workspace(project)
         out = HANDLERS[event](Store(workspace), payload, cfg)
         if out:

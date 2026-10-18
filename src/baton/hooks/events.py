@@ -248,6 +248,15 @@ def _bash_command(payload: Dict[str, Any]) -> str:
     return str(inp.get("command", "")) if isinstance(inp, dict) else ""
 
 
+def is_shell_candidate(payload: Dict[str, Any], cfg: Config) -> bool:
+    """A Bash call worth a closer look: it may write files (cheap text check, no database)."""
+    try:
+        return bool(cfg.shell_writes and payload.get("tool_name") == "Bash"
+                    and shellwrites.is_write_like(_bash_command(payload)))
+    except Exception:
+        return False
+
+
 def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     project = project_dir_from(payload)
     shell = bool(cfg.shell_writes and payload.get("tool_name") == "Bash")
