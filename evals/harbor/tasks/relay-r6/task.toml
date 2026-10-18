@@ -1,0 +1,25 @@
+schema_version = "1.4"
+artifacts = []
+
+[metadata]
+level = "R6"
+description = "A needle in a pile of rules: one decisive refund rule among 20 pasted conventions"
+
+[verifier]
+timeout_sec = 180.0
+collect = []
+
+[verifier.env]
+
+[agent]
+timeout_sec = 1500.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 1800.0
+os = "linux"
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]

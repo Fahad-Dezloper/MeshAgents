@@ -6,8 +6,8 @@ Pre-registration: docs/RESULTS-RELAY.md.
 
 ```
 fixture/      pristine "shop" package (clash fixture plus shop/errors.py and shop/batch.py)
-tasks.json    the tickets for R1-R5 (two sessions each)
-check.py      python3 -B check.py <R1..R5> <project_dir> [pristine_dir]  -> JSON with s1_pass / s2_pass
+tasks.json    the tickets for R1-R6 (two sessions each)
+check.py      python3 -B check.py <R1..R6> <project_dir> [pristine_dir]  -> JSON with s1_pass / s2_pass
 analyze.py    statistics for a finished run (Fisher, permutation, bootstrap); --selftest
 ```
 
@@ -18,12 +18,13 @@ analyze.py    statistics for a finished run (Fisher, permutation, bootstrap); --
 | R3 | new public functions raise ShopError, never ValueError, with type hints | add apply_coupon |
 | R4 | shop.batch deadlocks, use the single-item path | bulk import |
 | R5 | nothing (negative control) | unrelated change |
+| R6 | one refund rule (cap at order total, round half-even, never negative) hidden as the 10th of 20 pasted conventions | add shop.api.refund_order |
 
 Arms: baseline (no plugin), plugin (baton hooks), notes (no plugin; prompts ask for a HANDOFF.md).
 
 ## Run
 ```sh
-python3 evals/harbor/build_tasks.py                 # writes evals/harbor/tasks/relay-r1..r5
+python3 evals/harbor/build_tasks.py                 # writes evals/harbor/tasks/relay-r1..r6
 docker build -t baton-eval:latest -f evals/harbor/image/Dockerfile .
 BATON_EVAL_SUITE=relay BATON_EVAL_PREFIX=relay1 BATON_EVAL_CONCURRENCY=4 evals/harbor/run_eval.sh 10
 python3 evals/relay/analyze.py "evals/harbor/jobs/relay1-*"
