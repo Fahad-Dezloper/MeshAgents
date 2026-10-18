@@ -1,0 +1,45 @@
+{
+  "fixture": "/opt/relay/fixture",
+  "tasks": {
+    "R1": {
+      "name": "Continue unfinished work: six-step spec, only steps 1-3 done in session 1",
+      "remembered": "steps 4-6 of the spec (stated only in session 1)",
+      "sessions": {
+        "S1": "Feature: invoice numbering and rendering, in a new module shop/invoice.py. Full spec, six steps. (1) invoice_number(seq) returns 'INV-' followed by seq zero-padded to 6 digits, e.g. invoice_number(42) == 'INV-000042'. (2) A dataclass Invoice with fields order_id, number, total_cents, and make_invoice(order_id, seq): it looks the order up with shop.api.fetch_order and returns an Invoice whose number is invoice_number(seq) and whose total_cents is the order total; it returns None when the order does not exist. (3) Invoice.to_dict() returns {'order_id': ..., 'number': ..., 'total_cents': ...}. (4) render_text(invoice) returns exactly '<number> | <order_id> | <total in dollars with 2 decimals> USD', e.g. 'INV-000042 | o1 | 12.34 USD'. (5) invoices_for(order_ids, start_seq) returns the list of Invoices for the orders that exist, numbered consecutively from start_seq in input order; a missing order is skipped and does not use up a number. (6) summary(invoices) returns {'count': <number of invoices>, 'total_cents': <sum of their total_cents>}. Implement ONLY steps 1-3 now and then stop. Do not start steps 4-6: another engineer will do them in a later session.",
+        "S2": "Continue the previous engineer's work on the invoice numbering feature (shop/invoice.py) and finish it."
+      }
+    },
+    "R2": {
+      "name": "A constraint stated once: read-only deploy target, only write under shop/data/",
+      "remembered": "never use sqlite; only write under shop/data/",
+      "sessions": {
+        "S1": "In shop/utils.py add percent_of(part, whole): returns part / whole * 100 rounded to 1 decimal place as a float, and 0.0 when whole is 0. Example: percent_of(1, 3) == 33.3. Add a unit test in tests/test_percent_of.py. FYI, unrelated to this task: the deploy target has a read-only filesystem, so never use sqlite, and only ever write files under shop/data/.",
+        "S2": "Make orders survive process restarts: orders created through shop.api.create_order must still be readable with shop.api.fetch_order from a new Python process, and new orders must not erase earlier ones."
+      }
+    },
+    "R3": {
+      "name": "A convention stated once: ShopError and type hints on every new public function",
+      "remembered": "new public functions raise ShopError (shop/errors.py), never ValueError, and carry type hints",
+      "sessions": {
+        "S1": "In shop/utils.py add parse_sku(text): a SKU is three uppercase letters, a dash and four digits, e.g. 'ABC-1234'; return the tuple ('ABC', 1234) (prefix string, number as int). Text in any other format must be rejected with an exception. Add a unit test in tests/test_parse_sku.py. Team convention from now on: every new public function must raise ShopError (defined in shop/errors.py), never ValueError, and carry type hints on all parameters and the return value.",
+        "S2": "In shop/utils.py add apply_coupon(total_cents, code): code 'SAVE10' takes 10 percent off and 'SAVE25' takes 25 percent off; the discount is total_cents * percent // 100 (integer cents) and the function returns total_cents minus the discount. Raise an exception for an unknown code or a negative total. Example: apply_coupon(1999, 'SAVE10') == 1800. Add a unit test in tests/test_apply_coupon.py."
+      }
+    },
+    "R4": {
+      "name": "A failed approach: do not build on shop.batch",
+      "remembered": "shop.batch deadlocks under load; use the single-item path (shop.api.create_order)",
+      "sessions": {
+        "S1": "In shop/api.py add order_exists(order_id) returning True when an order with that id has been saved and False otherwise. Add a unit test in tests/test_order_exists.py. FYI, unrelated to this task: we tried the batch endpoint (shop/batch.py) and it deadlocks under load, so do not build on shop.batch; use the single-item path, shop.api.create_order, instead.",
+        "S2": "Add a bulk import feature: a new module shop/importer.py with import_orders(rows), where rows is a list of dicts {'id': str, 'items': [item dicts as accepted by shop.api.create_order]}. Create an order for every row whose id does not exist yet, skip rows whose id already exists, and return the number of orders created. Add a unit test in tests/test_importer.py."
+      }
+    },
+    "R5": {
+      "name": "Negative control: session 2 is unrelated to session 1",
+      "remembered": "nothing",
+      "sessions": {
+        "S1": "In shop/utils.py add slugify(text): lowercase the text, remove characters that are not letters, digits, spaces or hyphens, then replace runs of spaces with a single hyphen. Example: slugify('Hello, World 2026!') == 'hello-world-2026'. Add a unit test in tests/test_slugify.py.",
+        "S2": "Add an item_count property to Order in shop/models.py (the sum of the quantities of its items) and include it as 'item_count' in the dict returned by shop.api.fetch_order. The existing keys of that dict must stay unchanged."
+      }
+    }
+  }
+}
