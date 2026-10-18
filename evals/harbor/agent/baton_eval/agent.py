@@ -180,9 +180,16 @@ class _ClashAgent(ClaudeCode):
             except Exception as e:  # a failed session is data, not a crash
                 return {"worker": key, "ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
 
-        # All sessions start together: overlap in time is what produces collisions.
+        # Default: all sessions start together (overlap in time is what produces collisions).
+        # mode "relay": sessions run one after another in the same checkout, like yesterday's session
+        # followed by today's; only the plugin arm carries notes between them (through FalkorDB).
         try:
-            results = await asyncio.gather(*[one(k, t) for k, t in workers.items()])
+            if spec.get("mode") == "relay":
+                results = []
+                for k, t in workers.items():
+                    results.append(await one(k, t))
+            else:
+                results = await asyncio.gather(*[one(k, t) for k, t in workers.items()])
         finally:
             await self._stop_falkordb(environment)
 
@@ -213,6 +220,7 @@ class _ClashAgent(ClaudeCode):
         context.metadata = {
             "arm": self.ARM,
             "level": spec.get("level"),
+            "mode": spec.get("mode", "parallel"),
             "workers": per_worker,
             "dry_run": self._dry(),
             "note": "cost_usd is a list-price estimate; subscription auth is not billed per token",
