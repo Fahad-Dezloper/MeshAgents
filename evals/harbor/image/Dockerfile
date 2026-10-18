@@ -24,6 +24,8 @@ RUN python3 -m venv /opt/baton/.venv \
 # The shared codebase every trial starts from, and the scorer.
 COPY evals/clash/fixture /app/project
 COPY evals/clash/check.py /opt/clash/check.py
+# Relay evaluation (sessions one after another): its own pristine fixture, tickets and checker.
+COPY evals/relay /opt/relay
 RUN cd /app/project \
  && git init -q \
  && git add -A \

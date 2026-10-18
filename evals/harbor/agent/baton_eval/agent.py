@@ -5,7 +5,8 @@ shared checkout inside the sandbox. The only difference between the two arms is 
 plugin is loaded for those sessions:
 
     baton_eval.agent:BatonClashBaseline    no coordination
-    baton_eval.agent:BatonClashPlugin      baton hooks + tools enabled
+    baton_eval.agent:BatonClashPlugin      baton hooks enabled (hooks-only product)
+    baton_eval.agent:BatonClashNotes       no plugin; the prompt asks for a HANDOFF.md notes file (relay mode)
 
 Run with:  PYTHONPATH=evals/harbor/agent harbor run -p <task> -a baton_eval.agent:BatonClashPlugin ...
 
@@ -21,6 +22,7 @@ import asyncio
 import json
 import re
 import shlex
+import time
 from typing import Any, Dict, List, Optional
 
 from harbor.agents.installed.claude_code import ClaudeCode
@@ -41,6 +43,14 @@ WRAPPER = (
     "in at most 4 lines: the files you changed, then a line starting with 'NOTICED:' naming "
     "anything unexpected or conflicting you saw in the repo (or 'none').\n\nTICKET:\n{ticket}"
 )
+
+# The "notes" arm: the best-case manual alternative to baton. No plugin, but each session is asked to
+# keep a HANDOFF.md at the repo root. The first session writes it, later sessions read it first.
+NOTES_FIRST = (
+    "\n\nBefore finishing, update HANDOFF.md at the repo root (create it if missing) with what you did, "
+    "what remains and any project rules."
+)
+NOTES_LATER = "\n\nStart by reading HANDOFF.md at the repo root, if it exists."
 
 _FENCE = re.compile(r"```json\s*(\{.*?\})\s*```", re.S)
 
@@ -159,35 +169,53 @@ class _ClashAgent(ClaudeCode):
         workers: Dict[str, str] = spec["workers"]
         logs = self.environment_logs_dir.as_posix()
         plugin = self.ARM == "plugin"
+        notes = self.ARM == "notes"
+        relay = spec.get("mode") == "relay"
         env = self._session_env()
         timeout = int(self._get_env("BATON_WORKER_TIMEOUT") or 600)
 
         await self.exec_as_agent(
             environment, command=f"mkdir -p {logs}/sessions", env=env
         )
+        if spec.get("fixture"):
+            # relay tasks bring their own pristine checkout (the image default is the clash fixture)
+            await self.exec_as_agent(
+                environment,
+                command=(
+                    f"find {PROJECT} -mindepth 1 -delete && cp -a {shlex.quote(spec['fixture'])}/. {PROJECT}/ && "
+                    f"cd {PROJECT} && git init -q && git add -A && "
+                    "git -c user.name=eval -c user.email=eval@localhost commit -qm 'pristine fixture'"
+                ),
+                env=env,
+            )
         await self._start_falkordb(environment, logs)
         if self._dry() and plugin:
             await self._dry_plugin_check(environment, logs)
 
-        async def one(key: str, ticket: str) -> Dict[str, Any]:
-            run_env = {**env, "WORKER_PROMPT": WRAPPER.format(dir=PROJECT, ticket=ticket)}
+        async def one(key: str, ticket: str, index: int = 0) -> Dict[str, Any]:
+            prompt = WRAPPER.format(dir=PROJECT, ticket=ticket)
+            if notes and relay:
+                prompt += NOTES_FIRST if index == 0 else NOTES_LATER
+            run_env = {**env, "WORKER_PROMPT": prompt}
+            t0 = time.monotonic()
             try:
                 await self.exec_as_agent(
                     environment, command=self._worker_command(key, logs, plugin),
                     env=run_env, timeout_sec=timeout,
                 )
-                return {"worker": key, "ok": True}
+                return {"worker": key, "ok": True, "wall_s": round(time.monotonic() - t0, 1)}
             except Exception as e:  # a failed session is data, not a crash
-                return {"worker": key, "ok": False, "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
+                return {"worker": key, "ok": False, "wall_s": round(time.monotonic() - t0, 1),
+                        "error": "%s: %s" % (type(e).__name__, str(e)[:200])}
 
         # Default: all sessions start together (overlap in time is what produces collisions).
         # mode "relay": sessions run one after another in the same checkout, like yesterday's session
         # followed by today's; only the plugin arm carries notes between them (through FalkorDB).
         try:
-            if spec.get("mode") == "relay":
+            if relay:
                 results = []
-                for k, t in workers.items():
-                    results.append(await one(k, t))
+                for i, (k, t) in enumerate(workers.items()):
+                    results.append(await one(k, t, i))
             else:
                 results = await asyncio.gather(*[one(k, t) for k, t in workers.items()])
         finally:
@@ -203,7 +231,12 @@ class _ClashAgent(ClaudeCode):
                     data = json.loads((getattr(res, "stdout", "") or "").strip() or "{}")
                     usage = data.get("usage") or {}
                     rec.update(turns=data.get("num_turns"), cost_usd=data.get("total_cost_usd"),
-                               is_error=data.get("is_error"), session_id=data.get("session_id"))
+                               is_error=data.get("is_error"), session_id=data.get("session_id"),
+                               duration_ms=data.get("duration_ms"),
+                               input_tokens=int(usage.get("input_tokens") or 0),
+                               output_tokens=int(usage.get("output_tokens") or 0),
+                               cache_read_tokens=int(usage.get("cache_read_input_tokens") or 0),
+                               cache_creation_tokens=int(usage.get("cache_creation_input_tokens") or 0))
                     totals["cost"] += float(data.get("total_cost_usd") or 0)
                     totals["turns"] += int(data.get("num_turns") or 0)
                     totals["input"] += int(usage.get("input_tokens") or 0)
@@ -241,3 +274,8 @@ class BatonClashPluginFull(_ClashAgent):
     """Hooks plus the MCP tools (what rounds 1-3 and the 'eval5' run measured)."""
     ARM = "plugin"
     MCP = True
+
+
+class BatonClashNotes(_ClashAgent):
+    """No plugin. In relay mode each session's prompt asks for a HANDOFF.md (first writes, later read)."""
+    ARM = "notes"

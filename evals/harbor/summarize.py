@@ -24,11 +24,14 @@ def load(path):
 
 def arm_of(job_dir):
     cfg = open(os.path.join(job_dir, "config.json")).read() if os.path.exists(os.path.join(job_dir, "config.json")) else ""
+    if "BatonClashNotes" in cfg:
+        return "notes"
     if "BatonClashPlugin" in cfg:
         return "plugin"
     if "BatonClashBaseline" in cfg:
         return "baseline"
-    return "plugin" if "plugin" in os.path.basename(job_dir) else "baseline"
+    name = os.path.basename(job_dir)
+    return "notes" if "notes" in name else ("plugin" if "plugin" in name else "baseline")
 
 
 def trials(job_dir):
@@ -36,7 +39,7 @@ def trials(job_dir):
     for t in sorted(glob.glob(os.path.join(job_dir, "*__*"))):
         if not os.path.isdir(t):
             continue
-        m = re.search(r"clash-(l\d+)", os.path.basename(t))
+        m = re.search(r"(?:clash|relay)-([lr]\d+)", os.path.basename(t))
         reward = load(os.path.join(t, "verifier", "reward.json"))
         check = load(os.path.join(t, "verifier", "check.json")) or {}
         warnings = errors = 0
@@ -54,10 +57,13 @@ def trials(job_dir):
                     warnings += 1
         out.append({
             "level": (m.group(1).upper() if m else "?"),
-            "ok": bool(reward and reward.get("clash_free") == 1.0),
+            # clash trials score `clash_free`; relay trials score `relay_pass` (session 2's deliverable)
+            "ok": bool(reward and (reward.get("clash_free") == 1.0 or reward.get("relay_pass") == 1.0)),
+            "s1_ok": bool(reward and reward.get("s1_pass") == 1.0),
+            "relay": bool(reward and "relay_pass" in reward),
             "scored": reward is not None,
             "failed_checks": (reward or {}).get("checks_failed"),
-            "types": [c.get("type") for c in check.get("clashes", [])],
+            "types": [c.get("type") for c in (check.get("clashes") or check.get("failures") or [])],
             "warnings": warnings,
             "hook_errors": errors,
         })
@@ -82,14 +88,15 @@ def main():
     if oneline:
         for (lvl, arm), ts in sorted(rows.items()):
             ok = sum(1 for t in ts if t["ok"])
-            print("    %s %-8s clash-free %d/%d" % (lvl, arm, ok, len(ts)))
+            label = "session-2 pass" if ts and ts[0]["relay"] else "clash-free"
+            print("    %s %-8s %s %d/%d" % (lvl, arm, label, ok, len(ts)))
         return
 
     levels = sorted({k[0] for k in rows})
-    lines = ["| Level | Arm | Trials | Clash-free | Avg failed checks | Collision warnings delivered | Most common problems |",
+    lines = ["| Level | Arm | Trials | Clash-free / session-2 pass | Avg failed checks | Collision warnings delivered | Most common problems |",
              "|---|---|---|---|---|---|---|"]
     for lvl in levels:
-        for arm in ("baseline", "plugin"):
+        for arm in ("baseline", "plugin", "notes"):
             ts = rows.get((lvl, arm))
             if not ts:
                 continue
@@ -98,7 +105,7 @@ def main():
             avg = "%.1f" % (sum(fc) / len(fc)) if fc else "-"
             types = collections.Counter(x for t in ts for x in t["types"])
             top = ", ".join("%s x%d" % kv for kv in types.most_common(3)) or "none"
-            warn = str(sum(t["warnings"] for t in ts)) if arm == "plugin" else "n/a"
+            warn = str(sum(t["warnings"] for t in ts)) if arm == "plugin" else "n/a"  # baseline and notes have no hooks
             lines.append("| %s | %s | %d | %d/%d | %s | %s | %s |" % (lvl, arm, len(ts), ok, len(ts), avg, warn, top))
     out = "\n".join(lines)
     print(out)

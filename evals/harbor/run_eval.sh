@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
-# Run the collision evaluation: every level, both arms, K attempts each, one trial at a time.
+# Run the collision evaluation: every level, both arms, K attempts each (default: one trial at a time).
 #
 #   evals/harbor/run_eval.sh [K] ["L1 L2 L3 L4 L5"] ["baseline plugin"]
+#
+# Relay evaluation (sessions one after another; arms baseline, plugin, notes):
+#   BATON_EVAL_SUITE=relay BATON_EVAL_PREFIX=relay1 BATON_EVAL_CONCURRENCY=4 evals/harbor/run_eval.sh 10
+#   (levels default to "R1 R2 R3 R4 R5", arms to "baseline plugin notes")
+#
+# Env: BATON_EVAL_CONCURRENCY = trials run at the same time (harbor -n, default 1)
+#      BATON_EVAL_PREFIX      = job name prefix, use a new one per round
+#      BATON_EVAL_MODEL       = model (default anthropic/claude-haiku-5-5)
 #
 # Examples
 #   evals/harbor/run_eval.sh                 # K=5, all levels, both arms (about 50 trials)
@@ -13,8 +21,15 @@ set -u
 cd "$(dirname "$0")/../.."
 
 K="${1:-5}"
-LEVELS="${2:-L1 L2 L3 L4 L5}"
-ARMS="${3:-baseline plugin}"
+SUITE="${BATON_EVAL_SUITE:-clash}"
+if [ "$SUITE" = "relay" ]; then
+  LEVELS="${2:-R1 R2 R3 R4 R5}"
+  ARMS="${3:-baseline plugin notes}"
+else
+  LEVELS="${2:-L1 L2 L3 L4 L5}"
+  ARMS="${3:-baseline plugin}"
+fi
+CONC="${BATON_EVAL_CONCURRENCY:-1}"
 MODEL="${BATON_EVAL_MODEL:-anthropic/claude-haiku-5-5}"
 PREFIX="${BATON_EVAL_PREFIX:-eval}"   # use a new prefix per round, e.g. eval2
 HARBOR=".venv/bin/harbor"
@@ -29,7 +44,7 @@ mkdir -p evals/harbor/jobs
 
 total=0; done_n=0; failed=0
 for level in $LEVELS; do for arm in $ARMS; do total=$((total+1)); done; done
-echo "evaluation: levels=[$LEVELS] arms=[$ARMS] attempts=$K  jobs=$total  model=$MODEL"
+echo "evaluation: suite=$SUITE levels=[$LEVELS] arms=[$ARMS] attempts=$K concurrency=$CONC jobs=$total  model=$MODEL"
 echo "started: $(date)"
 
 for level in $LEVELS; do
@@ -39,6 +54,7 @@ for level in $LEVELS; do
       baseline) agent="baton_eval.agent:BatonClashBaseline" ;;
       plugin)   agent="baton_eval.agent:BatonClashPlugin" ;;
       full)     agent="baton_eval.agent:BatonClashPluginFull" ;;
+      notes)    agent="baton_eval.agent:BatonClashNotes" ;;
       *) echo "unknown arm: $arm"; exit 1 ;;
     esac
     job="${PREFIX}-${arm}-${lvl}-k${K}"
@@ -48,9 +64,10 @@ for level in $LEVELS; do
       continue
     fi
     echo "[$done_n/$total] $job  ($(date +%H:%M:%S))"
-    "$HARBOR" run -p "evals/harbor/tasks/clash-$lvl" -a "$agent" -m "$MODEL" \
+    case "$lvl" in r*) tdir="relay-$lvl" ;; *) tdir="clash-$lvl" ;; esac
+    "$HARBOR" run -p "evals/harbor/tasks/$tdir" -a "$agent" -m "$MODEL" \
         --env-file .env.eval \
-        -k "$K" -n 1 -o evals/harbor/jobs --job-name "$job" > "evals/harbor/jobs/$job.log" 2>&1
+        -k "$K" -n "$CONC" -o evals/harbor/jobs --job-name "$job" > "evals/harbor/jobs/$job.log" 2>&1
     rc=$?
     if [ $rc -ne 0 ]; then
       failed=$((failed+1)); echo "    job exited with code $rc (see evals/harbor/jobs/$job.log)"
