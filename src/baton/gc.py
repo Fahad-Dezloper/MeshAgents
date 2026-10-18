@@ -16,6 +16,7 @@ def collect(store, days: float = 7.0, now: Optional[float] = None) -> dict:
                      "AND t.id STARTS WITH 'sess_' WITH t, count(t) AS n DETACH DELETE t RETURN sum(n)"),
         ("handoffs", "MATCH (h:Handoff) WHERE coalesce(h.created_at, 0) < $c "
                      "WITH h, count(h) AS n DETACH DELETE h RETURN sum(n)"),
+        ("notices", "MATCH (n:Notice) WHERE coalesce(n.at, 0) < $c WITH n, count(n) AS k DETACH DELETE n RETURN sum(k)"),
         ("artifacts", "MATCH (a:Artifact) WHERE NOT (a)--() WITH a, count(a) AS n DELETE a RETURN sum(n)"),
     ):
         rows = store.rows(q, {"c": cut})
@@ -40,8 +41,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     ws = ws or os.environ.get("BATON_WORKSPACE") or default_workspace()
     res = collect(Store(ws), days)
-    print("graph baton_%s: removed %d finished sessions, %d old handoffs, %d unreferenced files (older than %g days)"
-          % (ws, res["sessions"], res["handoffs"], res["artifacts"], days))
+    print("graph baton_%s: removed %d finished sessions, %d old handoffs, %d old heads-ups, %d unreferenced files (older than %g days)"
+          % (ws, res["sessions"], res["handoffs"], res["notices"], res["artifacts"], days))
     return 0
 
 

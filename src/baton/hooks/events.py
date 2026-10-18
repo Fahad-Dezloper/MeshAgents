@@ -14,7 +14,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from baton.capture import derive, shellsnap, shellwrites, symbols, transcript
-from baton.core import cochange, codegraph, decisions, rules, sessions
+from baton.core import cochange, codegraph, decisions, notices, rules, sessions
 from baton.core.paths import normalize_path
 from baton.core.safety import scrub
 from baton.core.tasks import clip_goal
@@ -134,6 +134,14 @@ def on_session_start(store: Store, payload: Dict[str, Any], cfg: Config, now: Op
         except Exception:
             pass  # git history is an extra too
     text = sessions.briefing(store, actor, now=now)
+    if text:
+        try:
+            n_rules = len(sessions.recent_rules(store, actor, time.time() if now is None else now))
+            notices.record(store, actor, "briefing",
+                           ("Started knowing %d rule%s from earlier helpers" % (n_rules, "" if n_rules == 1 else "s"))
+                           if n_rules else "Started with notes from earlier helpers", text, now=now)
+        except Exception:
+            pass
     return context_output("SessionStart", text) if text else None
 
 
@@ -153,6 +161,7 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
             if rel:
                 extra = ("[MeshAgents] Rules stated earlier that look relevant to this request:\n"
                          + "\n".join("- %s" % scrub(x, 240) for x in rel))
+                notices.record(store, actor, "rule", "Reminded of a rule: %s" % scrub(rel[0], 90), extra, now=now)
     except Exception:
         pass  # rule capture is an extra; never let it affect the session
     if not goal:
@@ -170,6 +179,10 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
                 "is already doing it. Do NOT implement it a second time. Reply that session %s is "
                 "handling it and stop, unless the user explicitly asked for a separate attempt."
                 % (names, names))
+    try:
+        notices.record(store, actor, "duplicate", "Another helper was given the same task", text, now=now)
+    except Exception:
+        pass
     return context_output("UserPromptSubmit", text + ("\n\n" + extra if extra else ""))
 
 
@@ -234,7 +247,11 @@ def _cochange_hint(store: Store, actor: str, project: str, paths: List[str], cfg
             _remember_warned(actor, sig)  # also when empty: the answer will not change within a session
             if line:
                 lines.append(line)
-        return "[MeshAgents] " + " ".join(lines) if lines else None
+        if lines:
+            msg = "[MeshAgents] " + " ".join(lines)
+            notices.record(store, actor, "hint", scrub(" ".join(lines), 150), msg, files=paths, now=None)
+            return msg
+        return None
     except Exception:
         return None
 
@@ -317,6 +334,22 @@ def _pre_check(store: Store, payload: Dict[str, Any], cfg: Config, project: str,
                      "edit agrees with these (names, signatures, config keys):\n%s"
                      % (", ".join(paths), "\n".join(lines)))
     text = "\n\n".join(parts)
+    try:
+        if res["leases"]:
+            lf = sorted({p for t in res["leases"] for p in t["paths"]}) or paths  # type: ignore[union-attr]
+            notices.record(store, actor, "collision", "Another helper is working in %s" % notices.names(lf),
+                           parts[0] if parts else text, files=lf, now=now)
+        elif res["decisions"]:
+            df = sorted({p for d in res["decisions"] for p in d["paths"]}) or paths  # type: ignore[union-attr]
+            notices.record(store, actor, "collision", "Another helper already changed %s" % notices.names(df),
+                           parts[0] if parts else text, files=df, now=now)
+        if nearby:
+            nf = sorted({c["path"] for c in nearby})
+            notices.record(store, actor, "nearby",
+                           "Other helpers changed files this one uses: %s" % notices.names(nf),
+                           parts[-1], files=nf, now=now)
+    except Exception:
+        pass
 
     if res["has_conflicts"] and cfg.policy in ("ask", "deny"):
         pass  # the hint never turns a call into a prompt or a block; it is added to plain context only
@@ -420,6 +453,10 @@ def _code_graph(store: Store, actor: str, project: str, path: str, old: Optional
         text = codegraph.impact(store, actor, path, breaking, now=now)
         if text:
             _remember_warned(actor, signature)
+            files = re.findall(r"^- (\S+?)(?: \(| |:)", text, re.M)
+            notices.record(store, actor, "impact",
+                           "Changing %s may break code in %s" % (breaking[0]["name"], notices.names(files) or "other files"),
+                           text, files=files, now=now)
         return text
     except Exception:
         return None

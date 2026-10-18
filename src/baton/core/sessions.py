@@ -86,8 +86,9 @@ def set_goal(store: Store, actor: str, prompt: str, now: Optional[float] = None)
     begin_session(store, actor, now=now)
     rows = store.rows(
         "MATCH (t:Task {id: $id}) WHERE t.auto_goal = true "
-        "SET t.goal = $goal, t.goal_key = $gk, t.auto_goal = false, t.spec = $spec RETURN t.goal",
-        {"id": session_task_id(actor), "goal": goal, "gk": goal_key(full), "spec": full[:SPEC_CHARS]},
+        "SET t.goal = $goal, t.goal_key = $gk, t.auto_goal = false, t.spec = $spec, t.goal_at = $at RETURN t.goal",
+        {"id": session_task_id(actor), "goal": goal, "gk": goal_key(full), "spec": full[:SPEC_CHARS],
+         "at": _now(now)},
     )
     return full if rows else None
 

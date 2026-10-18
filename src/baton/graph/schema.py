@@ -3,7 +3,7 @@
 Pure data: importing this module needs no database driver.
 """
 
-LABELS = ("Actor", "Task", "Decision", "Finding", "Artifact", "Handoff", "Symbol")
+LABELS = ("Actor", "Task", "Decision", "Finding", "Artifact", "Handoff", "Symbol", "Notice")
 
 REL_TYPES = (
     "DEPENDS_ON",   # Task -> Task
@@ -13,6 +13,7 @@ REL_TYPES = (
     "BASED_ON",     # Decision -> Decision | Finding
     "SUPERSEDES",   # Decision -> Decision
     "INCLUDES",     # Handoff -> Decision | Finding | Artifact | Task
+    "WAS_TOLD",     # Actor -> Notice (a heads-up or briefing a session was given)
     "DEFINES",      # Artifact -> Symbol
     "CALLS",        # Symbol -> Symbol
     "CO_CHANGED",   # Artifact -> Artifact {n, ratio}, learned from git history
@@ -32,6 +33,7 @@ INDEX_STATEMENTS = (
     "CREATE INDEX FOR (a:Artifact) ON (a.path)",
     "CREATE INDEX FOR (h:Handoff) ON (h.id)",
     "CREATE INDEX FOR (s:Symbol) ON (s.id)",
+    "CREATE INDEX FOR (n:Notice) ON (n.id)",
     "CREATE INDEX FOR (s:Symbol) ON (s.path)",
     "CREATE INDEX FOR (c:CoChangeIndex) ON (c.id)",
 )

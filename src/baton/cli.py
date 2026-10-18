@@ -1,4 +1,4 @@
-"""`meshagents` console command: `meshagents doctor` runs the install check, `meshagents gc` prunes old data, anything else is a hook event."""
+"""`meshagents` console command: `meshagents doctor` runs the install check, `meshagents gc` prunes old data, `meshagents demo` sets up the recording demo, anything else is a hook event."""
 
 from __future__ import annotations
 
@@ -16,6 +16,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         from baton.gc import main as gc_main
 
         return gc_main(argv[1:])
+    if argv and argv[0] == "demo":
+        from baton.demo_kit import main as demo_main
+
+        return demo_main(argv[1:])
     if argv and argv[0] == "ui":
         from baton.ui.server import main as ui_main
 
