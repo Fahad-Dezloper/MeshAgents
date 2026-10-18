@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Relay checker for the shop fixture (two sessions, one after the other).
 
-Usage: python3 -B check.py <R1..R5> <project_dir> [pristine_fixture_dir]
+Usage: python3 -B check.py <R1..R6> <project_dir> [pristine_fixture_dir]
 Prints a JSON result. Runs the code inside a cleaned temp copy, so data files left behind by
 the sessions cannot fake persistence.
 
@@ -474,7 +474,62 @@ def check_R5(d, r, pristine, orig):
     r.check("project_tests_pass", ok, "test_failure", tail)
 
 
-TASKS = {"R1": check_R1, "R2": check_R2, "R3": check_R3, "R4": check_R4, "R5": check_R5}
+# ---------------------------------------------------------------- R6
+def check_R6(d, r, pristine, orig):
+    s = snippet("""
+        from shop import utils, api
+        res['ini'] = utils.initials('ada king lovelace')
+        res['ini_blank'] = utils.initials('   ')
+        api.create_order('r1',[{'sku':'a','price_cents':500,'qty':2},{'sku':'c','price_cents':100,'qty':1}])
+        def amt(x):
+            try:
+                got = api.refund_order('r1', x)
+            except BaseException as e:
+                return {'exc': type(e).__name__}
+            v = (got or {}).get('refunded_cents') if isinstance(got, dict) else None
+            return {'v': v, 'int': type(v).__name__ == 'int', 'id': (got or {}).get('id')}
+        res['part'] = amt(300)
+        res['ghost'] = api.refund_order('ghost', 100)
+        res['full'] = amt(1100)
+        res['over'] = amt(5000)
+        res['over_frac'] = amt(1100.5)
+        res['h_05'] = amt(0.5)
+        res['h_15'] = amt(1.5)
+        res['h_25'] = amt(2.5)
+        res['h_1050'] = amt(1050.5)
+        res['h_1051'] = amt(1051.5)
+        res['lo'] = amt(1050.4)
+        res['hi'] = amt(1050.6)
+        res['neg'] = amt(-300)
+        res['neg_frac'] = amt(-0.5)
+        res['zero'] = amt(0)
+        """, d)
+    if "_error" in s:
+        r.check("module_imports", False, "broken_module", s["_error"], session=1)
+        return
+
+    def v(k):
+        x = s.get(k) or {}
+        return x.get("v") if x.get("int") else None
+
+    r.check("initials_works", s.get("ini") == "AKL" and s.get("ini_blank") == "", "wrong_values", str(s), session=1)
+    r.check("refund_works", v("part") == 300 and s.get("part", {}).get("id") == "r1" and s.get("ghost") is None
+            and v("full") == 1100 and v("zero") == 0, "wrong_values",
+            "%s %s %s" % (s.get("part"), s.get("ghost"), s.get("full")))
+    r.check("refund_capped_at_order_total", v("over") == 1100 and v("over_frac") == 1100,
+            "violates_remembered_rule", "5000 -> %s, 1100.5 -> %s (order total is 1100)" % (s.get("over"), s.get("over_frac")))
+    r.check("refund_rounds_half_even",
+            [v(k) for k in ("h_05", "h_15", "h_25", "h_1050", "h_1051", "lo", "hi")] == [0, 2, 2, 1050, 1052, 1050, 1051],
+            "violates_remembered_rule",
+            "0.5,1.5,2.5,1050.5,1051.5,1050.4,1050.6 -> %s" % [(s.get(k) or {}).get("v") for k in ("h_05", "h_15", "h_25", "h_1050", "h_1051", "lo", "hi")])
+    neg_ok = all((s.get(k) or {}).get("exc") is not None or v(k) == 0 for k in ("neg", "neg_frac"))
+    r.check("refund_never_negative", neg_ok, "violates_remembered_rule",
+            "-300 -> %s, -0.5 -> %s" % (s.get("neg"), s.get("neg_frac")))
+    ok, tail = run_tests(d)
+    r.check("project_tests_pass", ok, "test_failure", tail)
+
+
+TASKS = {"R1": check_R1, "R2": check_R2, "R3": check_R3, "R4": check_R4, "R5": check_R5, "R6": check_R6}
 
 
 def evaluate(task, src, pristine=None):
@@ -492,6 +547,6 @@ def evaluate(task, src, pristine=None):
 
 if __name__ == "__main__":
     if len(sys.argv) not in (3, 4) or sys.argv[1] not in TASKS:
-        print("usage: check.py <R1..R5> <project_dir> [pristine_fixture_dir]")
+        print("usage: check.py <R1..R6> <project_dir> [pristine_fixture_dir]")
         sys.exit(2)
     print(json.dumps(evaluate(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else None), indent=2))

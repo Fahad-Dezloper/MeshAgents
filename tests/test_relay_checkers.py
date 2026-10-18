@@ -445,6 +445,82 @@ class R5Tests(unittest.TestCase):
         self.assertEqual(failed(res), ["item_count_in_fetch"])
 
 
+# ----------------------------------------------------------------- R6
+INITIALS = '''
+
+def initials(name):
+    return "".join(w[0].upper() for w in name.split())
+'''
+REFUND_OK = '''
+
+def refund_order(order_id, amount_cents):
+    order = db.get_order(order_id)
+    if order is None:
+        return None
+    amount = max(0, min(round(amount_cents), order.total_cents))
+    return {"id": order_id, "refunded_cents": int(amount)}
+'''
+
+
+def refund(body):
+    return '''
+
+def refund_order(order_id, amount_cents):
+    order = db.get_order(order_id)
+    if order is None:
+        return None
+''' + body
+
+
+def r6(refund_src, initials_src=INITIALS):
+    return make(appends={"shop/api.py": refund_src, "shop/utils.py": initials_src})
+
+
+class R6Tests(unittest.TestCase):
+    def test_pristine_fails(self):
+        res = run("R6", make())
+        self.assertFalse(res["s1_pass"])
+        self.assertFalse(res["s2_pass"])
+
+    def test_reference_passes(self):
+        res = run("R6", r6(REFUND_OK))
+        self.assertTrue(res["s1_pass"], res)
+        self.assertTrue(res["s2_pass"], res)
+        self.assertEqual(res["failure_count"], 0)
+
+    def test_refund_without_the_rule_fails_all_three_rule_checks(self):
+        naive = refund("    return {\"id\": order_id, \"refunded_cents\": int(amount_cents)}\n")
+        res = run("R6", r6(naive))
+        self.assertTrue(res["s1_pass"])
+        self.assertEqual(failed(res), ["refund_capped_at_order_total", "refund_never_negative", "refund_rounds_half_even"])
+
+    def test_no_cap_fails(self):
+        res = run("R6", r6(REFUND_OK.replace("min(round(amount_cents), order.total_cents)", "round(amount_cents)")))
+        self.assertEqual(failed(res), ["refund_capped_at_order_total"])
+
+    def test_half_up_rounding_fails(self):
+        res = run("R6", r6(REFUND_OK.replace("round(amount_cents)", "int(amount_cents + 0.5)")))
+        self.assertEqual(failed(res), ["refund_rounds_half_even"])
+
+    def test_truncation_fails(self):
+        res = run("R6", r6(REFUND_OK.replace("round(amount_cents)", "int(amount_cents)")))
+        self.assertEqual(failed(res), ["refund_rounds_half_even"])
+
+    def test_negative_amount_passed_through_fails(self):
+        res = run("R6", r6(REFUND_OK.replace("max(0, min(round(amount_cents), order.total_cents))", "min(round(amount_cents), order.total_cents)")))
+        self.assertEqual(failed(res), ["refund_never_negative"])
+
+    def test_negative_amount_rejected_with_an_error_is_accepted(self):
+        src = REFUND_OK.replace("    amount = max(0,", "    if amount_cents < 0:\n        raise ShopError('negative')\n    amount = max(0,")
+        src = "from shop.errors import ShopError\n" + src
+        res = run("R6", r6(src))
+        self.assertTrue(res["s2_pass"], res)
+
+    def test_unknown_order_must_give_none(self):
+        res = run("R6", r6(REFUND_OK.replace("return None", "return {\"id\": order_id, \"refunded_cents\": 0}")))
+        self.assertEqual(failed(res), ["refund_works"])
+
+
 class CliTests(unittest.TestCase):
     def test_cli_prints_json(self):
         import json

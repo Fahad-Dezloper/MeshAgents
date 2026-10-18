@@ -148,3 +148,61 @@ R4 did not discriminate: nobody took the trap, even without memory. It carries n
 - The R1 pilot found that the first version cut the request off at 200 characters; this was fixed before the
   full run (full request now kept). The pilot trials are not part of these numbers.
 
+
+
+# R6 addendum, written before running R6
+
+Status: PRE-REGISTERED before any R6 trial. The R1-R5 results above are not changed. R6 tests whether memory
+still works when there is a lot of it (a needle in a pile of rules). Nothing about R1-R5, the arms, the model
+or the notes-arm prompt suffixes changes.
+
+## Task (evals/relay/tasks.json, checker `check_R6` in evals/relay/check.py, validated in tests/test_relay_checkers.py)
+- Session 1 ticket: add `initials(name)` in shop/utils.py (small, unrelated). Its prompt also pastes a block of
+  20 one-sentence team conventions (emails, logging, CSV export, caching, naming, CLI flags, retries, pagination,
+  webhooks and so on). 19 are about other modules and irrelevant to session 2. Exactly one, number 10 of 20
+  (the middle), is decisive: "Refund amounts are always capped at the original order total and rounded
+  half-even to whole cents; never negative."
+- Session 2 ticket: add `shop.api.refund_order(order_id, amount_cents)` (amount may be fractional; returns
+  `{'id', 'refunded_cents'}` as an int, or None for an unknown order). The ticket does not mention the cap, the
+  rounding or the sign, and the rule cannot be inferred from the code.
+- Checker (session 2): basic behaviour; cap (5000 and 1100.5 on an order of 1100 give 1100); half-even rounding
+  (0.5, 1.5, 2.5, 1050.5, 1051.5, 1050.4, 1050.6 give 0, 2, 2, 1050, 1052, 1050, 1051); never negative (a
+  negative amount gives 0 or raises, never a negative refund); project tests pass. Session 2 passes only if all
+  hold. Python's built-in `round` is half-even, so a model that happens to use it passes the rounding check by
+  habit; this is a known leak and is why the baseline is only a control.
+- Before any trial the checker was validated: reference solution passes, pristine fails, and variants that break
+  exactly one part of the rule fail exactly that check (no cap, half-up, truncation, negative passthrough,
+  everything naive), while rejecting a negative amount with an error is accepted.
+- Notes arm: unchanged generic suffixes (session 1 asked to record what it did and "any project rules" in
+  HANDOFF.md, session 2 asked to start by reading HANDOFF.md). Whether session 1 chooses to record the one rule
+  out of 20 is part of what is measured.
+
+## Hypotheses
+- H6a: baton's session-2 pass rate is not below the notes arm's (10 vs 10 trials, margin: at most 15 points lower).
+- H6b: baton's cost per trial is below the notes arm's.
+- Control: the baseline arm should fail by construction, apart from guessing by habit (see the `round` leak).
+  It is reported as a control only and carries no hypothesis.
+
+## Metrics
+Primary: session-2 pass (`relay_pass`). Secondary: cost per trial and per success (list-price estimate), turns,
+output tokens, session-1 pass, hook errors, and for the plugin arm whether session 2 was shown the refund rule.
+Per-check failures are reported (cap, rounding, sign) so a partial miss is visible.
+
+## Trials and statistics
+10 trials per arm (30 trials, 60 sessions), model `claude-haiku-5-5`, run as one job per arm
+(`BATON_EVAL_SUITE=relay ... run_eval.sh 10 "R6"`). Pass rates: Fisher exact, two-sided; cost: permutation test;
+cost per success with bootstrap interval, all via evals/relay/analyze.py. With 10 per arm only large differences
+can be shown; this is stated up front. No stopping rule, no peeking. Invalid (infrastructure) trials are
+re-run once and counted in the report.
+
+## Success and failure
+- Success: baton passes at least as often as notes (not more than 15 points lower) AND costs less per trial
+  than notes AND the baseline control passes clearly less than baton.
+- Partial: baton matches notes on pass rate but is not cheaper, or beats baseline only weakly.
+- Failure: baton passes more than 15 points below notes (a long pasted list dilutes what baton carries), or the
+  baseline control passes as often as baton (the task does not need memory; it then carries no evidence).
+  Any of these is reported as it is.
+
+## Known limits
+One more author-written task, one model, 10 trials per arm, the rule is a single clean sentence, and the
+pasted list is only 20 lines. This is a small step toward "memory under volume", not a test of large memories.
