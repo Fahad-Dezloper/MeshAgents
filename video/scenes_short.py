@@ -82,9 +82,46 @@ def s_mesh(c, t):
 
 
 def s_stats(c, t):
-    B.scene_numbers(c, t * 1.6, FT(n1=0.0, n2=2.4, n3=4.8, n4=6.2, n5=8.6))
-    k = e_out(prog(t, 6.6, 0.4))
-    c.text(960, 930, "Tests are built to make helpers collide; real projects see fewer clashes.", 34, MUTED, "r", anchor="m", alpha=k)
+    k = e_out(prog(t, 0.1, 0.35))
+    with c.push(1, 0, 0, k, dy=(1 - k) * 16):
+        c.text(960, 95, "What you get", 84, WHITE, "h", anchor="m")
+    GREY = (130, 130, 126)
+    cards = [("Fewer clashes", 80, "%", "", ["of runs finish clean", "(was 53%)"], "shield"),
+             ("The next helper already knows", 95, "%", "", ["finish the job", "(was 45% with no memory)"], "book"),
+             ("Cheaper for every good result", 29, "%", " less", ["$0.0159 \u2192 $0.0113", "per clean result"], "coin")]
+    cw, gap, y0, h = 570, 45, 175, 650
+    for i, (label, val, unit, extra, lines, icon) in enumerate(cards):
+        x = 60 + i * (cw + gap); cx = x + cw / 2; t0 = 0.8 + i * 0.8
+        with P(c, t, t0, cx, y0 + h / 2, 0.35, 40, True, 0.9):
+            c.glow(x, y0, cw, h, GREEN, 0.14, 50, r=30)
+            c.rect(x, y0, cw, h, 30, fill=PANEL, outline=BORDER, width=2)
+            iy = y0 + 85
+            c.glow_circle(cx, iy, 50, GREEN, 0.35)
+            if icon == "shield":
+                pts = [(cx - 40, iy - 44), (cx, iy - 58), (cx + 40, iy - 44), (cx + 40, iy + 4), (cx, iy + 56), (cx - 40, iy + 4)]
+                c.poly(pts, mix(BG, GREEN, 0.25))
+                c.line(pts + [pts[0]], GREEN, 6)
+                c.line([(cx - 17, iy - 2), (cx - 4, iy + 14), (cx + 20, iy - 18)], GREEN, 8)
+            elif icon == "book":
+                notebook(c, cx, iy, 0.32, t, 0.3)
+            else:
+                c.circle(cx, iy, 52, fill=mix(BG, GREEN, 0.25), outline=GREEN, width=6)
+                c.circle(cx, iy, 38, outline=GREEN, width=3)
+                c.text(cx, iy + 2, "$", 60, GREEN, "h", anchor="m")
+            ly = y0 + 190
+            for j, ln in enumerate(wrap(label, 48, cw - 50, "s")):
+                c.text(cx, ly + j * 56, ln, 48, WHITE, "s", anchor="m")
+            v = val * e_out(prog(t, t0 + 0.2, 1.0))
+            big = f"{v:.0f}{unit}"
+            wb = tw(f"{val}{unit}", 170, "h"); we = tw(extra, 64, "h") if extra else 0
+            xs = cx - (wb + we) / 2
+            c.text(xs, y0 + 400, big, 170, GREEN, "h")
+            if extra: c.text(xs + wb, y0 + 430, extra.strip(), 64, GREEN, "h", anchor="l") if False else c.text(xs + wb + 8, y0 + 432, extra.strip(), 64, GREEN, "h")
+            for j, ln in enumerate(lines):
+                dim = ln.startswith("(was")
+                c.text(cx, y0 + 535 + j * 50, ln, 38, GREY if dim else WHITE, "r", anchor="m")
+    k = e_out(prog(t, 4.0, 0.4))
+    c.text(960, 905, "Measured in 330 real test runs. The tests are built to make helpers collide.", 36, MUTED, "r", anchor="m", alpha=k)
 
 
 def s_end(c, t):
