@@ -6,15 +6,15 @@
 
 ## The six steps
 1. **Start the kit.** In a plain terminal run `meshagents demo` (from the repo: `.venv/bin/meshagents demo`). It opens the dashboard and prints the three prompts. Press Record.
-   Say: "This is a shared notebook for AI coding helpers."
+   Say: "This is a shared notebook for AI coding agents."
 2. **Open two terminals.** In each: `cd ~/meshagents-demo && claude --plugin-dir <repo>/plugin` (the kit prints the exact line).
-   Say: "Two helpers, same project."
+   Say: "Two agents, same project."
 3. **Prompt 1 in terminal 1.** Paste the first prompt, press Enter.
-   Say: "Helper one changes a function. Watch the board. It updates by itself."
-4. **Prompt 2 in terminal 2**, while helper one is still working.
-   Say: "Helper two needs that function. It gets warned before it breaks anything."
+   Say: "Agent one changes a function. Watch the board. It updates by itself."
+4. **Prompt 2 in terminal 2**, while agent one is still working.
+   Say: "Agent two needs that function. It gets warned before it breaks anything."
 5. **Prompt 3 in a NEW third terminal**, after both finish.
-   Say: "A brand new helper. Nobody told it the rule. It already knows: no sqlite."
+   Say: "A brand new agent. Nobody told it the rule. It already knows: no sqlite."
 6. **Show the memory view.** Click Memory in the dashboard.
    Say: "Everything is remembered here. Next, the numbers." Then show `MeshAgents-stats.png`.
 
@@ -26,7 +26,7 @@ Optional: the FalkorDB Browser at http://localhost:3000 (graph shown by `meshage
 
 ## If something fails
 - "FalkorDB is not running": run `docker compose up -d` in the repo, then `meshagents demo` again.
-- A helper answers oddly or the board looks wrong: run `meshagents demo reset` and start the steps again.
+- A agent answers oddly or the board looks wrong: run `meshagents demo reset` and start the steps again.
 - Dashboard blank: `meshagents demo status`; if it is down, run `meshagents demo`.
 - A prompt takes too long (over a minute): stop it with Ctrl-C and re-run the step; keep the take, cut later.
 - Nothing shows in the warning: check you started the terminals with the plugin line, not plain `claude`.
