@@ -40,7 +40,7 @@ My first version made things *cost 31% more*. I dug into the recordings and foun
 I'd rather tell you than have you find out:
 
 - My collision tests are *built* to make helpers collide. Real projects will see fewer clashes. The research I read found only 1 in 417 real merged changes had this kind of breakage.
-- It's one small test project and one cheap model, with a replication on a stronger model.
+- It's one small test project. I replicated on a stronger model (Sonnet) and it held (83% vs 33% on three levels), but only after I fixed a gap: that model edits files through shell commands, which my first version couldn't see.
 - A notes file that someone keeps perfectly does about as well on memory. MeshAgents' edge is that nobody has to maintain it, and it costs a little less.
 - One of my tests, where two helpers add the same stock reservation, is still not fixed.
 

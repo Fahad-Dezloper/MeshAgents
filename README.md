@@ -42,6 +42,7 @@ More help: [docs/QUICKSTART.md](docs/QUICKSTART.md).
 Short, honest answer: the machinery works; the proof that it makes your results better is not strong yet.
 
 **Proven**
+- **It also works on a second, stronger model.** On Sonnet, after we taught it to see edits made through shell commands, 20 of 24 runs came out clean with the product against 8 of 24 without (83% vs 33%, p = 0.001; three test levels, 8 runs each). Before that fix it did nothing on that model, because that model edits files only through the shell. Details: [docs/RESULTS.md](docs/RESULTS.md), round 7.
 - **Fewer clashes when sessions collide.** In a fresh 180-run test, 72 of 90 runs came out clean with MeshAgents against 48 of 90 without (80% vs 53%; the gap is +27 points, 95% range +13 to +40, p < 0.001). Each clean run cost about 29% less ($0.0113 vs $0.0159) because fewer runs had to be redone. Details and limits: [docs/RESULTS.md](docs/RESULTS.md), round 6.
 - Warnings really reach real concurrent sessions with nothing typed, with no hook errors in the evaluation runs.
 - Taking back a wrong note finds exactly the notes built on it (25 generated test graphs, all found, none wrong, about 3 ms).

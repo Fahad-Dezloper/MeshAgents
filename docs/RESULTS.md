@@ -312,3 +312,35 @@ difference (2/5 vs 0/5) is within noise at n = 5, and the product had almost not
 Shell-edit tracking was built (target paths parsed from the command, plus a before/after file snapshot as a
 safety net) and the Sonnet collision test is being re-run; see the next section when it appears.
 
+
+## Round 7, part 2: after shell-edit tracking (run 2026-10-18, 17:05-17:35 IST, prefix sonnet3)
+
+What changed: the hooks now understand file edits made through shell commands (target paths parsed from the
+command, plus a before/after file snapshot as a safety net; `src/baton/capture/shellwrites.py`,
+`shellsnap.py`). The first attempt at this (run sonnet2) did nothing, because the hook command's early-exit gate
+still dropped shell calls; the gate was fixed and covered by a test through the real entry point
+(`tests/test_cli_gate.py`). sonnet2 is therefore not a test of the fix and is not used below.
+
+Model claude-sonnet-5-5, 8 runs per level and side, levels L3, L4, L9 (chosen because they are the levels the
+earlier run showed problems on, and L9 as a held-out-style level); 24 runs per side.
+
+| Level (8 runs each) | No product | Product |
+|---|---|---|
+| L3 | 1 | **5** |
+| L4 | 4 | **8** |
+| L9 | 3 | **7** |
+| **All (24 per side)** | **8 (33%, CI 18-53%)** | **20 (83%, CI 64-93%)** |
+
+- Difference +50 points (bootstrap 95% CI +25 to +72), Fisher exact p = 0.001.
+- Hooks now fire on this model: 146 pre-edit events vs 19 before the fix; warnings delivered: 93 "other
+  sessions recently changed" digests and 43 collision warnings.
+- Cost per run is the same ($0.0959 vs $0.1047, permutation p = 0.64; Sonnet list prices); cost per clean run
+  $0.115 vs $0.314.
+- Haiku regression check on the same code (prefix shell2, 10 runs per level): L3 9/10, L4 5/10, L9 9/10, in
+  line with earlier runs (L3 9, L4 7, L9 10 of 10).
+
+Limits: three levels, 8 runs each, one stronger model; levels L3 and L4 were used to tune earlier versions; the
+tasks are constructed to collide. This supports "the product works on a second model once it can see that
+model's edits", not a general claim about all models or all editing styles (scripts run as files, such as
+`python3 fix.py`, are only caught by the snapshot diff; projects over 600 source files get named targets only).
+
