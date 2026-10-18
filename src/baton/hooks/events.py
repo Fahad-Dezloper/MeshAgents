@@ -12,8 +12,8 @@ import re
 import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 
-from baton.capture import derive, transcript
-from baton.core import decisions, sessions
+from baton.capture import derive, symbols, transcript
+from baton.core import codegraph, decisions, sessions
 from baton.core.paths import normalize_path
 from baton.core.safety import scrub
 from baton.core.tasks import clip_goal
@@ -116,6 +116,11 @@ def _remember_warned(actor: str, signature: str) -> None:
 def on_session_start(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     actor = actor_from(payload)
     sessions.begin_session(store, actor, now=now, lease_seconds=cfg.lease_seconds)
+    if cfg.code_graph:
+        try:
+            codegraph.index_project(store, project_dir_from(payload))
+        except Exception:
+            pass  # the code graph is an extra; never let it affect the session
     text = sessions.briefing(store, actor, now=now)
     return context_output("SessionStart", text) if text else None
 
@@ -251,28 +256,56 @@ def on_post_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Option
     for p in paths:
         sessions.touch(store, actor, p, now=now, lease_seconds=cfg.lease_seconds)
     tool = payload.get("tool_name")
+    edit = None
     if cfg.capture and tool in EDIT_TOOLS and paths:
-        _capture_edit(store, actor, payload, paths[0], now)
+        edit = _capture_edit(store, actor, payload, paths[0], now)
     if payload.get("tool_name") == "Bash" and len(paths) >= 2:
         decisions.post_decision(
             store, actor, "renamed/moved %s -> %s" % (paths[0], paths[1]),
             artifacts=paths, kind="rename", now=now,
         )
+    if cfg.code_graph and edit and edit[1] and paths[0].endswith(".py"):
+        text = _code_graph(store, actor, project, paths[0], edit[0], edit[1], now)
+        if text:
+            return context_output("PostToolUse", text)
     return None
 
 
-def _capture_edit(store: Store, actor: str, payload: Dict[str, Any], path: str, now: Optional[float]) -> None:
-    """Derive decisions (interface/config/storage changes) from the edit's own payload."""
+def _code_graph(store: Store, actor: str, project: str, path: str, old: Optional[str], new: str,
+                now: Optional[float]) -> Optional[str]:
+    """Re-index the edited file; if a public call shape broke, name the callers elsewhere."""
+    try:
+        codegraph.index_file(store, project, path, new)
+        if old is None:
+            return None
+        breaking = symbols.breaking_changes(old, new)
+        if not breaking:
+            return None
+        signature = "imp|%s|%s" % (path, ",".join(sorted(b["qual"] + b["reason"] for b in breaking)))
+        if _already_warned(actor, signature):
+            return None
+        text = codegraph.impact(store, actor, path, breaking, now=now)
+        if text:
+            _remember_warned(actor, signature)
+        return text
+    except Exception:
+        return None
+
+
+def _capture_edit(store: Store, actor: str, payload: Dict[str, Any], path: str, now: Optional[float]):
+    """Derive decisions (interface/config/storage changes) from the edit's own payload.
+
+    Returns (old_text or None, new_text) when the edit could be reconstructed, else None."""
     tool = str(payload.get("tool_name"))
     inp = payload.get("tool_input") or {}
     resp = payload.get("tool_response") or {}
     if not isinstance(resp, dict) or not isinstance(inp, dict):
-        return
+        return None
     original = resp.get("originalFile")
     old = original if isinstance(original, str) else None
     created = resp.get("type") == "create"
     if not created and old is None:
-        return  # cannot diff without the previous content
+        return None  # cannot diff without the previous content
     new = derive.new_text_for_edit(tool, inp, resp, old)
     local = _local_modules(project_dir_from(payload))
     for d in derive.derive_decisions(path, None if created else old, new, local_modules=local):
@@ -280,6 +313,7 @@ def _capture_edit(store: Store, actor: str, payload: Dict[str, Any], path: str, 
             store, actor, derive.decision_id(actor, path, d["kind"]), d["text"],
             artifacts=[path], kind=d["kind"], now=now,
         )
+    return (None if created else old, new) if isinstance(new, str) else None
 
 
 def _verification(payload: Dict[str, Any]) -> str:

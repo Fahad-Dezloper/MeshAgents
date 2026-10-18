@@ -3,7 +3,7 @@
 Pure data: importing this module needs no database driver.
 """
 
-LABELS = ("Actor", "Task", "Decision", "Finding", "Artifact", "Handoff")
+LABELS = ("Actor", "Task", "Decision", "Finding", "Artifact", "Handoff", "Symbol")
 
 REL_TYPES = (
     "DEPENDS_ON",   # Task -> Task
@@ -13,6 +13,8 @@ REL_TYPES = (
     "BASED_ON",     # Decision -> Decision | Finding
     "SUPERSEDES",   # Decision -> Decision
     "INCLUDES",     # Handoff -> Decision | Finding | Artifact | Task
+    "DEFINES",      # Artifact -> Symbol
+    "CALLS",        # Symbol -> Symbol
 )
 
 TASK_STATUSES = ("open", "claimed", "done", "released")
@@ -28,6 +30,8 @@ INDEX_STATEMENTS = (
     "CREATE INDEX FOR (f:Finding) ON (f.id)",
     "CREATE INDEX FOR (a:Artifact) ON (a.path)",
     "CREATE INDEX FOR (h:Handoff) ON (h.id)",
+    "CREATE INDEX FOR (s:Symbol) ON (s.id)",
+    "CREATE INDEX FOR (s:Symbol) ON (s.path)",
 )
 
 # Added once Phase 1.6 needs duplicate-ticket detection.
