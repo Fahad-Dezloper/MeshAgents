@@ -39,7 +39,7 @@ def trials(globs):
                 if not r or not rw or not r.get("agent_result"):
                     continue
                 ar = r["agent_result"]
-                ok = rw.get("clash_free", rw.get("pass", 0)) == 1.0
+                ok = rw.get("clash_free", rw.get("relay_pass", rw.get("pass", 0))) == 1.0
                 ws = (ar.get("metadata") or {}).get("workers") or []
                 out.append({"ok": ok, "out": ar.get("n_output_tokens") or 0, "cache": ar.get("n_cache_tokens") or 0,
                             "cost": ar.get("cost_usd") or 0.0, "turns": sum(w.get("turns") or 0 for w in ws),
@@ -54,7 +54,7 @@ def wilson(k, n, z=1.96):
     d = 1 + z * z / n
     c = p + z * z / (2 * n)
     m = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
-    return ((c - m) / d, (c + m) / d)
+    return (max(0.0, (c - m) / d), min(1.0, (c + m) / d))
 
 
 def fisher(a, n1, b, n2):

@@ -92,3 +92,59 @@ One model (cheap), one small fixture, tasks written by the author and designed t
 cell, list-price cost estimates, and a notes arm that is told exactly what to do (an upper bound for a
 manual habit). Baseline may pass by luck (guessing a convention); that is why R5 and the checkers' negative
 variants exist.
+
+
+# Results (run 2026-10-18, 14:07-14:37 IST, prefix relay1)
+
+150 trials (5 tasks x 3 arms x 10), 4 trials at a time, model claude-haiku-5-5, 0 failed or invalid trials,
+0 re-runs, 0 plugin hook errors. Plugin = the shipped hooks-only baton with full-request handoffs and rules
+captured from conversation. Notes = best case: both sessions are told to write and read a HANDOFF.md.
+Costs are list-price estimates (a subscription is not billed per token). Statistics: `evals/relay/analyze.py`
+(per task) and `evals/harbor/stats.py` (pooled, with intervals).
+
+## Did the second session finish the job? (session-2 pass, out of 10)
+
+| Task | No memory | Notes file | Baton |
+|---|---|---|---|
+| R1 continue unfinished work | 0 | 9 | **10** |
+| R2 a rule stated once (no sqlite) | 0 | 8 | **8** |
+| R3 a convention stated once | 8 | 10 | **10** |
+| R4 a failed approach to avoid | 10 | 10 | 10 |
+| R5 control (nothing to remember) | 10 | 10 | 10 |
+
+R4 did not discriminate: nobody took the trap, even without memory. It carries no evidence either way.
+
+## Pooled over R1-R4 (the tasks that need a remembered fact), 40 trials per arm
+
+| Arm | Passed | Pass rate (95% CI) | Cost per trial | Cost per success (95% CI) |
+|---|---|---|---|---|
+| No memory | 18/40 | 45% (31-60%) | $0.0053 | $0.0117 ($0.0086-$0.0177) |
+| Notes file | 37/40 | 92% (80-97%) | $0.0063 | $0.0068 ($0.0063-$0.0076) |
+| **Baton** | **38/40** | **95% (83-99%)** | **$0.0055** | **$0.0058 ($0.0054-$0.0064)** |
+
+- Baton vs no memory: +50 points (95% CI +33 to +67), Fisher exact p < 0.001; cost per success cut roughly in half.
+- Baton vs notes file: +2.5 points (95% CI -8 to +13), p = 1.0: the same pass rate. Baton costs about 12% less per
+  trial than the notes file (p < 0.001) because it injects a short, relevant briefing instead of making every
+  session write and read a file (the notes arm used 21% more turns than baton).
+- Price when memory is irrelevant (R5): baton $0.0048 vs $0.0045 per trial (+7%, p = 0.006), same pass rate.
+  Across all 50 trials baton costs +6% per trial over no memory, and used fewer turns (10.0 vs 10.6).
+
+## Against the pre-registered criteria
+- H1 (memory helps): met. +50 points pooled on R1-R4, p < 0.001.
+- H2 (not worse than manual notes): met. 38/40 vs 37/40.
+- H3 (no price when irrelevant, ratio at most 1.2 and pass not lower): met. Ratio 1.07, 10/10 vs 10/10.
+- H4 (cost per success not higher): met. $0.0058 vs $0.0117.
+- By the criteria written before the run this is a **strong success**: pass rate equal to notes within 15 points
+  at a lower cost per success.
+
+## What this does NOT show (read this before quoting the numbers)
+- R1 and R2 are built so that a session without notes cannot know the key fact, so 0/10 is by construction.
+  The honest reading is: when the needed fact lives only in an earlier conversation, baton carries it across
+  as well as a perfectly maintained notes file does, with nothing to maintain.
+- Where the fact is visible in the code (R3), no memory already passes 8 of 10. For real work the share of
+  tasks that need a remembered fact is unknown; this run does not measure it.
+- One cheap model, one small fixture, tasks written by the author, 10 trials per cell, and a notes arm that is
+  explicitly told what to write (a notes file that people forget to update would do worse).
+- The R1 pilot found that the first version cut the request off at 200 characters; this was fixed before the
+  full run (full request now kept). The pilot trials are not part of these numbers.
+

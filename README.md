@@ -49,10 +49,19 @@ Short, honest answer: the machinery works; the proof that it makes your results 
 - That the "these callers will break" warning helps: it fired once in 40 trials.
 - That file-pair hints prevent bugs (they predict which files change together; they do not measure bugs avoided).
 
-**Does a new session start smarter? (results coming)**
-<!-- TODO(lead): replace this block with results from docs/RESULTS-RELAY.md once the relay run is analysed.
-     The test is pre-registered there: 150 trials, baton vs no memory vs a hand-kept notes file. -->
-> TODO: pending. The test is written down in advance in [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md). Results will be added here, good or bad.
+**Does a new session start smarter? Yes, when it needs a fact from an earlier session.**
+We told a first session something once (the full job, a rule like "never use sqlite", a coding convention), then
+started a second session that was not told. 150 test runs, three setups:
+
+| Second session finished the job | No memory | A hand-kept notes file | **Baton** |
+|---|---|---|---|
+| On the 4 tasks that need the fact (40 runs each) | 18 of 40 (45%) | 37 of 40 (92%) | **38 of 40 (95%)** |
+| Cost for each run that succeeded | $0.0117 | $0.0068 | **$0.0058** |
+
+- Baton gives the same result as a notes file that a person keeps perfectly up to date, with nothing to maintain, and costs about 12% less.
+- Where nothing needs remembering, baton costs about 7% more per run and results are the same.
+- Honest limit: two of the four tasks are built so a session with no memory cannot know the fact, so the "no memory" number is low by design. We do not know how often real work needs a remembered fact.
+- Full method, numbers and limits: [docs/RESULTS-RELAY.md](docs/RESULTS-RELAY.md).
 
 Small samples, one cheap model, one test project, tasks and scoring written by the same author. Details: [For the technical reader](#for-the-technical-reader).
 
@@ -183,7 +192,7 @@ Write-ups with all caveats: [docs/RESULTS.md](docs/RESULTS.md), [docs/RESULTS-HE
 | Code graph "callers will break" warning | fired once in 40 trials | mechanism verified, **no outcome benefit shown** |
 | Retraction, 25 generated graphs (~203 items each) | precision 1.000, recall 1.000, ~3 ms; grep over a flat file: recall 0.65 with mixed citations, 0 with paraphrased | exact if `based_on` links were recorded (recall 0.73 if 20% missing) |
 | Co-change hints, 6 open-source repos, held-out 30% | hook setting (ratio 0.7, n 3): coverage 17.2%, precision@3 73.1%, noise 24.2%; the looser `baton together` default (0.5): 33.7%, 57.0%, 33.5%; same-directory guess: 29.8% precision | predicts co-changing files, not bugs avoided; about a third of hints miss; quality varies by repo |
-| Does a new session start smarter? | pending | see TODO above |
+| Does a new session start smarter? (150 runs, 3 setups) | on the 4 tasks that need a stated fact: baton 38/40, notes file 37/40, no memory 18/40; cost per success $0.0058 vs $0.0068 vs $0.0117; +7% cost when nothing needs remembering | pre-registered; strong success by our own criteria; two tasks are built to need memory |
 
 Known defect: a live-session warning can make a session defer too much (in two L2 trials a session wrote code calling a function that
 never existed). Duplicate-ticket tasks (L5) are not solved (0/5). The optional end-of-session re-check (`BATON_STOP_CHECK=1`, off) did
