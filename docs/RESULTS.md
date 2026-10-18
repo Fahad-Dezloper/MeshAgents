@@ -281,3 +281,34 @@ level and side = 90 per side, 0 failed jobs, 0 hook errors. Pooled statistics: `
 - L6 (two sessions each adding the same stock reservation) is still unsolved; the plugin's warnings arrive too
   late for that kind of overlap.
 
+
+# Round 7: a second, stronger model (Sonnet), and a gap it exposed
+
+Run: 2026-10-18, 16:15-16:28 IST, prefix sonnet1, model claude-sonnet-5-5, 5 trials per cell, shipped product
+(hooks-only, final code). The first model in all earlier rounds was claude-haiku-5-5.
+
+## Memory tests (sessions one after another): the result held
+| Task (5 runs each) | No memory | Notes file | Product |
+|---|---|---|---|
+| R1 continue unfinished work | 0 | 5 | **5** |
+| R2 a rule stated once | 0 | 5 | **5** |
+| R3 a convention stated once | 4 | 5 | **5** |
+These rely on what a session is told when it starts, which does not depend on how the model edits files.
+
+## Collision tests (sessions at the same time): NO benefit on this model
+| Level (5 runs each) | No product | Product | Collision warnings delivered |
+|---|---|---|---|
+| L3 | 0/5 | 0/5 | 0 |
+| L4 | 2/5 | 0/5 | 0 |
+
+**Cause, found by reading the recordings:** in this test setup Sonnet changed files only through shell commands
+(`sed -i`, `python3 - <<EOF ... open(p,'w').write(...)`, `cat > file <<EOF`; 45 shell calls, no Edit or Write
+calls). The hooks only understood the Edit/Write tools (and `mv`), so they saw 5 edit events in 40 sessions
+(Haiku: 98 in 10 trials), delivered no warnings, recorded no decisions and indexed no code changes. The product
+did nothing, so this is a gap in the product, not evidence that warnings do not help a stronger model. The L4
+difference (2/5 vs 0/5) is within noise at n = 5, and the product had almost nothing to react to.
+
+## What we did about it
+Shell-edit tracking was built (target paths parsed from the command, plus a before/after file snapshot as a
+safety net) and the Sonnet collision test is being re-run; see the next section when it appears.
+
