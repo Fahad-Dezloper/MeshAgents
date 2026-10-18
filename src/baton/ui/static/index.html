@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>baton</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#16181d;--mute:#667085;--line:#e3e6eb;--accent:#4f46e5;
+--ok:#12805c;--okbg:#e3f6ee;--warn:#b54708;--warnbg:#fff1dc;--bad:#b42318;--badbg:#fde8e6;--info:#175cd3;--infobg:#e6efff;--idle:#667085;--idlebg:#eef0f3}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--panel:#171b22;--ink:#e8eaee;--mute:#8b94a3;--line:#262c36;--accent:#8b8bff;
+--ok:#4ade9d;--okbg:#10301f;--warn:#fbb04d;--warnbg:#3a2a10;--bad:#ff8a80;--badbg:#3d1714;--info:#7ab0ff;--infobg:#142848;--idle:#9aa3b2;--idlebg:#222833}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+h1{font-size:18px;margin:0;letter-spacing:-.01em}
+h1 small{font-weight:400;color:var(--mute);margin-left:8px;font-size:13px}
+.conn{display:inline-flex;align-items:center;gap:6px;color:var(--mute);font-size:12.5px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad)}.dot.up{background:var(--ok)}
+.counts{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.count{padding:4px 10px;border-radius:8px;background:var(--idlebg);font-size:12.5px;color:var(--mute)}
+.count b{color:var(--ink);font-size:15px;margin-right:4px}
+.count.hot b{color:var(--bad)}
+main{padding:16px 20px 40px;max-width:1400px;margin:0 auto}
+.page{display:grid;gap:16px}
+.banner{padding:10px 14px;border-radius:8px;background:var(--badbg);color:var(--bad);border:1px solid var(--bad)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+section>h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);display:flex;gap:8px;align-items:baseline}
+section>h2 .hint{text-transform:none;letter-spacing:0;font-weight:400}
+.two{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--bg)}
+.card.live{border-left:4px solid var(--ok)}.card.expired{border-left:4px solid var(--warn)}.card.ended{opacity:.7}
+.card.clash{border-color:var(--bad);border-left:4px solid var(--bad)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.goal{font-weight:550;overflow-wrap:anywhere}
+.mute{color:var(--mute);font-size:12.5px}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--idlebg);color:var(--idle);white-space:nowrap}
+.chip.live,.chip.open{background:var(--okbg);color:var(--ok)}
+.chip.expired,.chip.tainted,.chip.warn{background:var(--warnbg);color:var(--warn)}
+.chip.retracted,.chip.bad{background:var(--badbg);color:var(--bad)}
+.chip.superseded,.chip.ended{background:var(--idlebg);color:var(--idle)}
+.chip.interface,.chip.storage{background:var(--infobg);color:var(--info)}
+.chip.config,.chip.rename{background:var(--warnbg);color:var(--warn)}
+.file{display:inline-block;padding:0 6px;border-radius:5px;background:var(--idlebg);margin:1px 2px 1px 0;overflow-wrap:anywhere}
+.file.shared{background:var(--badbg);color:var(--bad)}
+table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mute);font-weight:600}
+.heat{height:6px;border-radius:3px;background:var(--accent);min-width:6px}
+.feed{display:grid;gap:8px;max-height:560px;overflow:auto}
+.dec{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.dec.tainted{border-color:var(--warn)}.dec.retracted{opacity:.75}
+.dec .txt{overflow-wrap:anywhere}.dec.retracted .txt{text-decoration:line-through}
+button{font:inherit;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chain{margin:6px 0 0 6px;padding-left:10px;border-left:2px solid var(--line)}
+.empty{text-align:center;padding:36px 12px;color:var(--mute)}
+.empty pre{display:inline-block;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px 16px;color:var(--ink)}
+svg{max-width:100%;height:auto;display:block}
+.svgwrap{overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+svg text{font:11px ui-monospace,Menlo,monospace;fill:var(--ink)}
+.n-ok{fill:var(--okbg);stroke:var(--ok)}.n-warn{fill:var(--warnbg);stroke:var(--warn)}.n-bad{fill:var(--badbg);stroke:var(--bad)}.n-idle{fill:var(--idlebg);stroke:var(--idle)}.n-info{fill:var(--infobg);stroke:var(--info)}
+.e{stroke:var(--mute);fill:none;opacity:.55}.e.based{stroke:var(--accent);opacity:.8}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0}
+.pv-cols{display:grid;gap:12px;grid-template-columns:1fr 1fr}@media (max-width:900px){.pv-cols{grid-template-columns:1fr}}
+.preview{border:1px dashed var(--warn);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--warnbg)}
+</style>
+</head>
+<body>
+<header>
+  <h1>baton<small id="ws"></small></h1>
+  <span class="conn"><span class="dot" id="dot"></span><span id="conn">connecting</span></span>
+  <div class="counts" id="counts"></div>
+</header>
+<main id="main"></main>
+<script>
+"use strict";
+var S = null, selected = (location.hash.match(/^#id=([\w-]{1,80})$/) || [])[1] || null, skew = 0, openChains = {}, why = null, errorCount = 0;
+var $ = function (id) { return document.getElementById(id); };
+
+/* All text goes through textContent: data comes from other sessions and is untrusted. */
+function h(tag, attrs) {
+  var el = document.createElement(tag), i;
+  for (var k in (attrs || {})) {
+    if (k === "class") el.className = attrs[k];
+    else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), attrs[k]);
+    else el.setAttribute(k, attrs[k]);
+  }
+  function add(c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) c.forEach(add);
+    else el.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+  }
+  for (i = 2; i < arguments.length; i++) add(arguments[i]);
+  return el;
+}
+var NS = "http://www.w3.org/2000/svg";
+function sv(tag, attrs, text) {
+  var el = document.createElementNS(NS, tag);
+  for (var k in (attrs || {})) el.setAttribute(k, attrs[k]);
+  if (text != null) el.textContent = text;
+  return el;
+}
+function chip(text, cls) { return h("span", { "class": "chip " + (cls || text) }, text); }
+function nowS() { return Date.now() / 1000 + skew; }
+function age(ts) {
+  if (!ts) return "never";
+  var s = Math.max(0, Math.round(nowS() - ts));
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+function clip(t, n) { t = String(t); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+function statusClass(st) {
+  return { live: "n-ok", open: "n-ok", tainted: "n-warn", expired: "n-warn", retracted: "n-bad", superseded: "n-idle", ended: "n-idle", done: "n-idle" }[st] || "n-idle";
+}
+
+function render() {
+  if (!S) return;
+  $("ws").textContent = S.workspace;
+  $("dot").className = "dot" + (S.connected ? " up" : "");
+  $("conn").textContent = S.connected ? "FalkorDB connected" : "FalkorDB unreachable";
+  var c = S.counts, cs = $("counts");
+  cs.textContent = "";
+  [["live_sessions", "live sessions", ""], ["open_decisions", "open decisions", ""], ["collisions", "collisions", c.collisions ? "hot" : ""],
+   ["tainted", "tainted", c.tainted ? "hot" : ""], ["handoffs", "handoffs", ""]].forEach(function (x) {
+    cs.appendChild(h("span", { "class": "count " + x[2] }, h("b", {}, c[x[0]]), x[1]));
+  });
+  var main = h("div", { "class": "page" }), oldFeed = document.querySelector(".feed"), feedTop = oldFeed ? oldFeed.scrollTop : 0;
+  if (!S.connected) main.appendChild(h("div", { "class": "banner", role: "alert" },
+    "Cannot read the graph (" + S.error + "). Is FalkorDB running? Try: docker compose up -d. Still polling."));
+  var empty = !S.sessions.length && !S.decisions.length && !S.findings.length;
+  if (empty) { main.appendChild(emptyState()); swap(main, 0); return; }
+  main.appendChild(tower());
+  var two = h("div", { "class": "two" }, filesView(), feedView());
+  main.appendChild(two);
+  if (selected) main.appendChild(provenanceView());
+  main.appendChild(graphView());
+  swap(main, feedTop);
+}
+function swap(page, feedTop) {
+  $("main").replaceChildren(page);
+  var f = document.querySelector(".feed"); if (f) f.scrollTop = feedTop;
+}
+
+function emptyState() {
+  return h("section", {}, h("div", { "class": "empty" },
+    h("p", {}, S.connected ? "Nothing recorded in this workspace yet. Start a session and baton fills this page by itself."
+      : "Waiting for the database."),
+    h("pre", { "class": "mono" },
+      "docker compose up -d\n.venv/bin/pip install -e . && .venv/bin/baton doctor\nclaude --plugin-dir /path/to/baton/plugin"),
+    h("p", { "class": "mute" }, "Or fill it with the scripted demo: .venv/bin/python demo/run_demo.py")));
+}
+
+function leaseChip(s) {
+  var c = chip("lease " + mmss(s.lease_until - nowS()), "live");
+  c.setAttribute("data-until", s.lease_until);
+  return c;
+}
+function tick() {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-until]"), function (el) {
+    el.textContent = "lease " + mmss(parseFloat(el.getAttribute("data-until")) - nowS());
+  });
+}
+function tower() {
+  var sess = S.sessions.slice().sort(function (a, b) {
+    var r = { live: 0, expired: 1, open: 2, ended: 3 };
+    return (r[a.status] != null ? r[a.status] : 4) - (r[b.status] != null ? r[b.status] : 4) || (b.last_edit_at || 0) - (a.last_edit_at || 0);
+  });
+  var cards = sess.map(function (s) {
+    var shared = {};
+    s.collides_with.forEach(function (c) { shared[c.file] = c.with; });
+    var cls = "card " + s.status + (s.collides_with.length ? " clash" : "");
+    var lease = s.status === "live" ? leaseChip(s)
+      : s.status === "expired" ? chip("lease expired", "expired") : chip(s.status, s.status);
+    return h("div", { "class": cls },
+      h("div", { "class": "row" }, h("code", {}, s.short), lease,
+        s.collides_with.length ? chip("collision risk", "bad") : null),
+      h("div", { "class": "goal" }, s.goal),
+      h("div", { "class": "mute" }, "last edit ", age(s.last_edit_at), s.last_edit_path ? " · " + s.last_edit_path : ""),
+      s.collides_with.length ? h("div", { "class": "mute" }, "Also being edited by ",
+        s.collides_with.map(function (c) { return c.with.join(", ") + " (" + c.file + ")"; }).join("; ")) : null,
+      h("div", {}, s.files.map(function (f) { return h("code", { "class": "file" + (shared[f] ? " shared" : "") }, f); }),
+        s.file_count > s.files.length ? h("span", { "class": "mute" }, " +" + (s.file_count - s.files.length) + " more") : null));
+  });
+  return h("section", {}, h("h2", {}, "Tower", h("span", { "class": "hint" }, "who is working on what")),
+    cards.length ? h("div", { "class": "cards" }, cards) : h("div", { "class": "mute" }, "No sessions yet."));
+}
+
+function filesView() {
+  var max = 1;
+  S.files.forEach(function (f) { max = Math.max(max, f.session_count); });
+  var rows = S.files.map(function (f) {
+    return h("tr", {}, h("td", {}, h("code", {}, f.path), f.collision ? [" ", chip("shared live", "bad")] : null),
+      h("td", { style: "min-width:110px" }, h("div", { "class": "heat", style: "width:" + Math.round(100 * f.session_count / max) + "%" }),
+        h("span", { "class": "mute" }, f.session_count + (f.session_count === 1 ? " session" : " sessions"))),
+      h("td", {}, f.sessions.map(function (s) { return h("code", { "class": "file" }, s.short); })),
+      h("td", { "class": "mute" }, age(f.last_edit_at)));
+  });
+  return h("section", {}, h("h2", {}, "Files", h("span", { "class": "hint" }, "most contested first")),
+    rows.length ? h("table", {}, h("tr", {}, h("th", {}, "file"), h("th", {}, "sessions"), h("th", {}, "who"), h("th", {}, "last edit")), rows)
+      : h("div", { "class": "mute" }, "No files touched yet."));
+}
+
+function decIndex() {
+  var ix = {};
+  S.decisions.forEach(function (d) { ix[d.id] = { kind: "decision", d: d }; });
+  S.findings.forEach(function (f) { ix[f.id] = { kind: "finding", d: f }; });
+  return ix;
+}
+
+function chainView(id, ix, seen, depth) {
+  var node = h("div", { "class": "chain" });
+  var e = ix[id];
+  if (!e || seen[id] || depth > 6) { node.appendChild(h("span", { "class": "mute" }, e ? "(cycle)" : id + " (not loaded)")); return node; }
+  seen[id] = 1;
+  node.appendChild(h("div", {}, chip(e.kind === "finding" ? "finding" : e.d.kind, e.kind === "finding" ? "info" : e.d.kind), " ", chip(e.d.status, e.d.status), " ", clip(e.d.text, 140)));
+  (e.d.based_on || []).forEach(function (b) { node.appendChild(chainView(b, ix, seen, depth + 1)); });
+  return node;
+}
+
+function feedView() {
+  var ix = decIndex();
+  var items = S.decisions.map(function (d) {
+    var open = !!openChains[d.id];
+    return h("div", { "class": "dec " + d.status },
+      h("div", { "class": "row" }, chip(d.kind), chip(d.status), h("code", { "class": "mute" }, d.author.slice(0, 12)), h("span", { "class": "mute" }, age(d.created_at))),
+      h("div", { "class": "txt" }, d.text),
+      d.files.length ? h("div", {}, d.files.map(function (f) { return h("code", { "class": "file" }, f); })) : null,
+      d.status === "tainted" && d.tainted_by ? h("div", { "class": "mute" }, "tainted by retracted ", h("code", {}, d.tainted_by)) : null,
+      d.retract_reason ? h("div", { "class": "mute" }, "reason: " + d.retract_reason) : null,
+      h("div", { "class": "row" },
+        d.based_on.length ? h("button", { onclick: function () { openChains[d.id] = !open; render(); } }, (open ? "hide" : "show") + " based on (" + d.based_on.length + ")") : null,
+        h("button", { onclick: function () { selected = d.id; loadWhy(); render(); } }, "provenance")),
+      open ? d.based_on.map(function (b) { return chainView(b, ix, {}, 0); }) : null);
+  });
+  var fnd = S.findings.map(function (f) {
+    return h("div", { "class": "dec " + f.status },
+      h("div", { "class": "row" }, chip("finding", "info"), chip(f.status), h("span", { "class": "mute" }, age(f.created_at))),
+      h("div", { "class": "txt" }, f.text), h("div", { "class": "mute" }, "source: " + f.source),
+      f.retract_reason ? h("div", { "class": "mute" }, "reason: " + f.retract_reason) : null,
+      h("button", { onclick: function () { selected = f.id; loadWhy(); render(); } }, "blast radius"));
+  });
+  return h("section", {}, h("h2", {}, "Decisions", h("span", { "class": "hint" }, "newest first")),
+    h("div", { "class": "feed" }, items.length || fnd.length ? [items, fnd] : h("div", { "class": "mute" }, "No decisions yet.")));
+}
+
+function loadWhy() {
+  why = null; location.hash = selected ? "id=" + selected : "";
+  var id = selected;
+  fetch("/api/why?id=" + encodeURIComponent(id)).then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (selected === id) { why = j || { missing: true }; render(); } }).catch(function () {});
+}
+
+function layered(nodes, edges, rootId) {
+  /* rank = longest chain of BASED_ON below a node; sources (no upstream) are rank 0, drawn left. */
+  var up = {}, rank = {}, i;
+  nodes.forEach(function (n) { up[n.id] = []; });
+  edges.forEach(function (e) { if (up[e.from]) up[e.from].push(e.to); });
+  function r(id, d) { if (rank[id] != null) return rank[id]; if (d > 30) return 0; rank[id] = 0;
+    var m = -1; (up[id] || []).forEach(function (u) { m = Math.max(m, r(u, d + 1)); }); rank[id] = m + 1; return rank[id]; }
+  nodes.forEach(function (n) { r(n.id, 0); });
+  var cols = {}, maxR = 0;
+  nodes.forEach(function (n) { (cols[rank[n.id]] = cols[rank[n.id]] || []).push(n); maxR = Math.max(maxR, rank[n.id]); });
+  var W = 210, H = 38, pos = {}, rows = 1;
+  for (i = 0; i <= maxR; i++) { (cols[i] || []).forEach(function (n, j) { pos[n.id] = { x: 10 + i * (W + 50), y: 10 + j * (H + 10) }; }); rows = Math.max(rows, (cols[i] || []).length); }
+  var svg = sv("svg", { width: 20 + (maxR + 1) * (W + 50) - 50, height: 20 + rows * (H + 10), role: "img", "aria-label": "provenance graph" });
+  edges.forEach(function (e) {
+    var a = pos[e.to], b = pos[e.from]; if (!a || !b) return;
+    svg.appendChild(sv("path", { "class": "e based", d: "M" + (a.x + W) + " " + (a.y + H / 2) + " C" + (a.x + W + 30) + " " + (a.y + H / 2) + " " + (b.x - 30) + " " + (b.y + H / 2) + " " + b.x + " " + (b.y + H / 2) }));
+  });
+  nodes.forEach(function (n) {
+    var p = pos[n.id], g = sv("g", { style: "cursor:pointer" });
+    g.appendChild(sv("title", {}, n.kind + " " + n.id + " [" + n.status + "]\n" + n.text));
+    g.appendChild(sv("rect", { x: p.x, y: p.y, width: W, height: H, rx: 7, "class": statusClass(n.status), "stroke-width": n.id === rootId ? 3 : 1 }));
+    g.appendChild(sv("text", { x: p.x + 8, y: p.y + 15 }, clip(n.kind === "finding" ? "finding · " + n.status : n.dkind + " · " + n.status, 30)));
+    g.appendChild(sv("text", { x: p.x + 8, y: p.y + 30 }, clip(n.text, 32)));
+    g.addEventListener("click", function () { selected = n.id; loadWhy(); render(); });
+    svg.appendChild(g);
+  });
+  return svg;
+}
+
+function provenanceView() {
+  var sec = h("section", {}, h("h2", {}, "Provenance", h("span", { "class": "hint" }, "why this exists, and what depends on it"),
+    h("button", { onclick: function () { selected = null; why = null; render(); } }, "close")));
+  if (!why) { sec.appendChild(h("div", { "class": "mute" }, "loading…")); return sec; }
+  if (why.missing || why.error) { sec.appendChild(h("div", { "class": "mute" }, "Not found (it may have been removed).")); return sec; }
+  var all = [why.root].concat(why.upstream, why.downstream);
+  var seen = {}, nodes = all.filter(function (n) { if (seen[n.id]) return false; seen[n.id] = 1; return true; });
+  sec.appendChild(h("div", { "class": "mute" }, "Left is the source, right is what was built on it. Click a box to move there."));
+  sec.appendChild(h("div", { "class": "svgwrap" }, layered(nodes, why.edges, why.root.id)));
+  var pv = h("div", { "class": "pv-cols" },
+    h("div", {}, h("b", {}, "Based on (" + why.upstream.length + ")"), why.upstream.length ? why.upstream.map(function (u) { return h("div", {}, chip(u.status), " ", clip(u.text, 120)); }) : h("div", { "class": "mute" }, "nothing: this is a root")),
+    h("div", {}, h("b", {}, "Blast radius (" + why.downstream.length + ")"), why.downstream.length ? why.downstream.map(function (u) { return h("div", {}, chip(u.status), " ", clip(u.text, 120)); }) : h("div", { "class": "mute" }, "nothing depends on this")));
+  sec.appendChild(pv);
+  if (why.root.status === "open") sec.appendChild(h("div", { "class": "preview" }, h("b", {}, "If this were retracted: "),
+    why.would_taint.length ? why.would_taint.length + " decision(s) would become tainted: " + why.would_taint.map(function (d) { return clip(d.text, 60); }).join("; ") : "no other decision would be affected.",
+    h("div", { "class": "mute" }, "Preview only. This page cannot change anything; retract with: baton retract " + why.root.id + " --reason \"...\"")));
+  return sec;
+}
+
+function graphView() {
+  var g = S.graph, sec = h("section", {}, h("h2", {}, "Graph", h("span", { "class": "hint" }, g.nodes.length + " nodes" + (g.truncated ? " (capped)" : "") + " · hover for detail")));
+  if (!g.nodes.length) { sec.appendChild(h("div", { "class": "mute" }, "Empty.")); return sec; }
+  var order = ["task", "artifact", "decision", "finding"], cols = {}, pos = {}, rows = 1, W = 190, H = 20;
+  W = 230;
+  order.forEach(function (k) { cols[k] = []; });
+  g.nodes.forEach(function (n) { cols[n.kind].push(n); });
+  order.forEach(function (k, i) { cols[k].forEach(function (n, j) { pos[n.id] = { x: 10 + i * (W + 90), y: 28 + j * (H + 6) }; }); rows = Math.max(rows, cols[k].length); });
+  var svg = sv("svg", { width: 20 + 4 * (W + 90) - 90, height: 40 + rows * (H + 6), role: "img", "aria-label": "overview graph" });
+  order.forEach(function (k, i) { svg.appendChild(sv("text", { x: 10 + i * (W + 90), y: 14, style: "font-weight:700;opacity:.7" }, k + "s")); });
+  g.edges.forEach(function (e) {
+    var a = pos[e.from], b = pos[e.to]; if (!a || !b) return;
+    var left = a.x < b.x, x1 = left ? a.x + W : a.x, x2 = left ? b.x : b.x + W;
+    svg.appendChild(sv("path", { "class": "e" + (e.type === "BASED_ON" ? " based" : ""), d: "M" + x1 + " " + (a.y + H / 2) + " C" + (x1 + (left ? 40 : -40)) + " " + (a.y + H / 2) + " " + (x2 + (left ? -40 : 40)) + " " + (b.y + H / 2) + " " + x2 + " " + (b.y + H / 2) }, null));
+  });
+  g.nodes.forEach(function (n) {
+    var p = pos[n.id], gg = sv("g");
+    gg.appendChild(sv("title", {}, n.kind + (n.status ? " [" + n.status + "]" : "") + "\n" + n.label));
+    gg.appendChild(sv("rect", { x: p.x, y: p.y, width: W, height: H, rx: 5, "class": n.kind === "artifact" ? "n-info" : statusClass(n.status) }));
+    gg.appendChild(sv("text", { x: p.x + 6, y: p.y + 14 }, clip(n.label, 34)));
+    if (n.kind === "decision" || n.kind === "finding") { gg.style.cursor = "pointer"; gg.addEventListener("click", function () { selected = n.id.slice(2); loadWhy(); render(); }); }
+    svg.appendChild(gg);
+  });
+  sec.appendChild(h("div", { "class": "svgwrap" }, svg));
+  return sec;
+}
+
+function poll() {
+  fetch("/api/state", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+    S = j; skew = j.now - Date.now() / 1000; errorCount = 0; render();
+  }).catch(function (e) {
+    errorCount++;
+    if (S) { S.connected = false; S.error = "dashboard server not responding"; render(); }
+    if (window.console) console.error(e);
+    else { $("conn").textContent = "server not responding"; }
+  });
+}
+if (selected) loadWhy();
+poll(); setInterval(poll, 1500);
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

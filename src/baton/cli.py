@@ -16,6 +16,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         from baton.gc import main as gc_main
 
         return gc_main(argv[1:])
+    if argv and argv[0] == "ui":
+        from baton.ui.server import main as ui_main
+
+        return ui_main(argv[1:])
+    if argv and argv[0] in ("status", "why", "retract", "handoff"):
+        from baton.humancli import main as human_main
+
+        return human_main(argv)
     from baton.hooks.cli import main as hook_main
 
     return hook_main(argv)
