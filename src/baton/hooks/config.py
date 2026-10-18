@@ -18,6 +18,7 @@ class Config:
     capture: bool = True          # derive decisions from edits automatically
     code_graph: bool = True       # index Python symbols/calls and warn about callers a change breaks
     cochange: bool = True         # git-history hint: "files that usually change with this one" (env BATON_COCHANGE=0 disables)
+    shell_writes: bool = True     # also track edits made through shell commands (sed -i, heredocs, redirects); env BATON_SHELL_WRITES=0 disables
     stop_check: bool = False      # opt-in: at the end of a session, ask for one integration re-check when others edited its files (measured: no gain, more turns)
 
 
@@ -36,6 +37,7 @@ def load_config(project_dir: Optional[str]) -> Config:
                 cfg.stop_check = bool(raw.get("stop_check", cfg.stop_check))
                 cfg.code_graph = bool(raw.get("code_graph", cfg.code_graph))
                 cfg.cochange = bool(raw.get("cochange", cfg.cochange))
+                cfg.shell_writes = bool(raw.get("shell_writes", cfg.shell_writes))
         except (OSError, ValueError):
             pass
     if os.environ.get("BATON_DISABLED", "").lower() in ("1", "true", "yes"):
@@ -46,6 +48,8 @@ def load_config(project_dir: Optional[str]) -> Config:
         cfg.code_graph = False
     if os.environ.get("BATON_COCHANGE", "").lower() in ("0", "false", "no"):
         cfg.cochange = False
+    if os.environ.get("BATON_SHELL_WRITES", "").lower() in ("0", "false", "no"):
+        cfg.shell_writes = False
     if os.environ.get("BATON_STOP_CHECK", "").lower() in ("1", "true", "yes"):
         cfg.stop_check = True
     elif os.environ.get("BATON_STOP_CHECK", "").lower() in ("0", "false", "no"):

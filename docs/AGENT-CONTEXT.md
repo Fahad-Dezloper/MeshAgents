@@ -49,6 +49,16 @@ time on those.
 - Plan: relay run (~3h), then re-run the clash suite with larger n, then write up real numbers. Product code is
   frozen while evaluations run (image baton-eval:latest is rebuilt only after changes).
 
+## Shell edits (added in branch wt-bash)
+- Why: Sonnet changed files only through Bash (sed -i, heredoc scripts, cat > f), so hooks saw 5 edit events in 40 sessions.
+- What: capture/shellwrites.py (is_write_like, target_paths: parse the command), capture/shellsnap.py (before/after
+  snapshot of source files, diff by mtime and size), wired in hooks/events.py (on_pre_tool, _post_bash). Config flag
+  `shell_writes` (env BATON_SHELL_WRITES=0 turns it off). Edit-tool behaviour and message texts are unchanged.
+- Tests: tests/test_shellwrites.py with tests/data/shell_commands.jsonl (142 recorded Bash commands + synthetic ones).
+- Gaps: commands that run script files (`python3 fix.py`), `git stash/checkout` of many files (found by the diff, not
+  named), projects over 600 source files (only named targets), changes by other sessions during the same command.
+- The evaluation image must be rebuilt before this has any effect in Harbor runs.
+
 ## Rules for working here
 - Simple words when talking to the user (they asked for this; see memory). Short, concrete.
 - Never fabricate numbers; every claim needs a recorded run. Report negative results too.

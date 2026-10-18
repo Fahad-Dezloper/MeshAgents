@@ -13,7 +13,7 @@ import tempfile
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from baton.capture import derive, symbols, transcript
+from baton.capture import derive, shellsnap, shellwrites, symbols, transcript
 from baton.core import cochange, codegraph, decisions, rules, sessions
 from baton.core.paths import normalize_path
 from baton.core.safety import scrub
@@ -56,7 +56,7 @@ def rename_pairs(command: str) -> List[Tuple[str, str]]:
     return [(m.group(2), m.group(3))] if m else []
 
 
-def edit_paths(payload: Dict[str, Any], project: str) -> List[str]:
+def edit_paths(payload: Dict[str, Any], project: str, shell: bool = False) -> List[str]:
     tool = payload.get("tool_name")
     inp = payload.get("tool_input") or {}
     cwd = payload.get("cwd")
@@ -71,6 +71,11 @@ def edit_paths(payload: Dict[str, Any], project: str) -> List[str]:
         rp = rel_path(r, project, cwd)
         if rp and rp not in out:
             out.append(rp)
+    if shell and tool == "Bash":
+        # files a shell command will write (redirects, sed -i, heredoc scripts ...), best effort
+        for rp in shellwrites.target_paths(str(inp.get("command", "")), cwd, project):
+            if rp not in out:
+                out.append(rp)
     return out
 
 
@@ -234,12 +239,34 @@ def _cochange_hint(store: Store, actor: str, project: str, paths: List[str], cfg
         return None
 
 
+def _snap_dir(actor: str) -> str:
+    return os.path.dirname(_warned_path(actor))
+
+
+def _bash_command(payload: Dict[str, Any]) -> str:
+    inp = payload.get("tool_input")
+    return str(inp.get("command", "")) if isinstance(inp, dict) else ""
+
+
 def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     project = project_dir_from(payload)
-    paths = edit_paths(payload, project)
+    shell = bool(cfg.shell_writes and payload.get("tool_name") == "Bash")
+    actor = actor_from(payload)
+    if shell:
+        try:
+            cmd = _bash_command(payload)
+            if shellwrites.is_write_like(cmd):
+                shellsnap.take(project, _snap_dir(actor), actor)  # what the command changes is found by diffing afterwards
+        except Exception:
+            pass
+    paths = edit_paths(payload, project, shell)
     if not paths:
         return None
-    actor = actor_from(payload)
+    return _pre_check(store, payload, cfg, project, actor, paths, now)
+
+
+def _pre_check(store: Store, payload: Dict[str, Any], cfg: Config, project: str, actor: str,
+               paths: List[str], now: Optional[float]):
     res = decisions.check_conflicts(store, actor, paths, now=now)
 
     nearby: List[dict] = []
@@ -298,6 +325,8 @@ def on_pre_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optiona
 
 def on_post_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[float] = None):
     project = project_dir_from(payload)
+    if cfg.shell_writes and payload.get("tool_name") == "Bash":
+        return _post_bash(store, payload, cfg, project, now)
     paths = edit_paths(payload, project)
     if not paths:
         return None
@@ -318,6 +347,52 @@ def on_post_tool(store: Store, payload: Dict[str, Any], cfg: Config, now: Option
         if text:
             return context_output("PostToolUse", text)
     return None
+
+
+MAX_SHELL_TOUCH = 30
+MAX_SHELL_CAPTURE = 12
+
+
+def _post_bash(store: Store, payload: Dict[str, Any], cfg: Config, project: str, now: Optional[float]):
+    """A shell command ran: record the files it changed (snapshot diff) or at least the ones it named."""
+    actor = actor_from(payload)
+    renames = edit_paths(payload, project)  # `mv a b` handling, as before
+    cmd = _bash_command(payload)
+    changed = None
+    hinted: List[str] = []
+    if shellwrites.is_write_like(cmd):
+        hinted = shellwrites.target_paths(cmd, payload.get("cwd"), project)
+        changed = shellsnap.diff(project, _snap_dir(actor), actor)
+    touched = list(renames)
+    if changed is not None:
+        extra = [h for h in hinted if os.path.splitext(h)[1].lower() not in shellsnap.SRC_EXT]
+        candidates = [c[0] for c in changed] + extra
+    else:
+        candidates = hinted
+    for c in candidates:
+        if c not in touched:
+            touched.append(c)
+    if not touched:
+        return None
+    for p in touched[:MAX_SHELL_TOUCH]:
+        sessions.touch(store, actor, p, now=now, lease_seconds=cfg.lease_seconds)
+    if len(renames) >= 2:
+        decisions.post_decision(
+            store, actor, "renamed/moved %s -> %s" % (renames[0], renames[1]),
+            artifacts=renames, kind="rename", now=now,
+        )
+    texts: List[str] = []
+    for path, old, new, existed in (changed or [])[:MAX_SHELL_CAPTURE]:
+        try:
+            if cfg.capture and (old is not None or not existed):
+                _derive_record(store, actor, project, path, old if existed else None, new, now)
+            if cfg.code_graph and new and path.endswith(".py"):
+                text = _code_graph(store, actor, project, path, old if existed else None, new, now)
+                if text:
+                    texts.append(text)
+        except Exception:
+            pass  # a shell edit we cannot interpret must never affect the command
+    return context_output("PostToolUse", "\n\n".join(texts)) if texts else None
 
 
 def _code_graph(store: Store, actor: str, project: str, path: str, old: Optional[str], new: str,
@@ -356,13 +431,19 @@ def _capture_edit(store: Store, actor: str, payload: Dict[str, Any], path: str, 
     if not created and old is None:
         return None  # cannot diff without the previous content
     new = derive.new_text_for_edit(tool, inp, resp, old)
-    local = _local_modules(project_dir_from(payload))
-    for d in derive.derive_decisions(path, None if created else old, new, local_modules=local):
+    _derive_record(store, actor, project_dir_from(payload), path, None if created else old, new, now)
+    return (None if created else old, new) if isinstance(new, str) else None
+
+
+def _derive_record(store: Store, actor: str, project: str, path: str, old: Optional[str],
+                   new: Optional[str], now: Optional[float]) -> None:
+    """Record the decisions (interface/config/storage changes) a change from `old` (None: new file) to `new` implies."""
+    local = _local_modules(project)
+    for d in derive.derive_decisions(path, old, new, local_modules=local):
         decisions.upsert_decision(
             store, actor, derive.decision_id(actor, path, d["kind"]), d["text"],
             artifacts=[path], kind=d["kind"], now=now,
         )
-    return (None if created else old, new) if isinstance(new, str) else None
 
 
 def _verification(payload: Dict[str, Any]) -> str:
