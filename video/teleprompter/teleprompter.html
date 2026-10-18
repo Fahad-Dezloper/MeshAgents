@@ -58,14 +58,12 @@ button.go{background:#34d399;color:#04140d;border-color:#34d399;font-weight:700}
 const SCRIPT = {
   duration: 58,
   lines: [
-    {t: 0, label: "Hello", text: "Hi, this is my submission for the FalkorDB hackathon. My name is Fahad, and here is what I built: MeshAgents."},
-    {t: 7, label: "What it is", text: "It is a shared notebook for AI agents that work on the same project."},
-    {t: 12, label: "The problem", text: "The problem: agents can't see each other. So they overwrite each other's work, and a new agent forgets your rules."},
-    {t: 20, label: "How it helps", text: "Here, agent two starts a job on a file that agent one is changing. MeshAgents warns it first. No clash."},
-    {t: 28, label: "It remembers", text: "The next day, a brand new agent already knows our rule: no sqlite. Everything is saved in a FalkorDB graph."},
-    {t: 36, label: "Easy setup", text: "And it is easy. Install the plugin, and that is it. It runs by itself. You do nothing."},
-    {t: 43, label: "The numbers", text: "In 330 test runs, clean runs went from 53 to 80 percent, and each good result cost 29 percent less."},
-    {t: 52, label: "The end", text: "That is MeshAgents. Thanks for watching!"}
+    {t: 0, label: "Intro", text: "Hi, I'm Fahad. This is my submission for the FalkorDB hackathon: MeshAgents, a shared notebook for AI agents working on the same project."},
+    {t: 7, label: "The problem", text: "The problem: agents overwrite each other's work. And every new agent starts blank. It has to reread the whole project before it can change anything, and that burns a lot of tokens."},
+    {t: 19, label: "What I built", text: "So I built MeshAgents on a FalkorDB graph. It stores who is working on what, every change, and every rule. Before agent two edits agent one's file, it gets a warning. No clash."},
+    {t: 32, label: "It remembers", text: "Then a brand new agent starts, and it already knows our rule: no sqlite. It reads one short note, not the whole project."},
+    {t: 42, label: "Easy setup", text: "Setup is easy. Install the plugin, and it runs by itself. You do nothing."},
+    {t: 49, label: "Results", text: "In 330 test runs, clean runs went from 53 to 80 percent, and each good result cost 29 percent less. Thanks for watching!"}
   ]
 };
 /* ========================================================================================== */
