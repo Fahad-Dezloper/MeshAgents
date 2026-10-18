@@ -151,6 +151,20 @@ def export_session_handoff(store: Store, actor: str, note: str = "", now: Option
     )
 
 
+def recent_rules(store: Store, actor: str, now: float, limit: int = 8) -> List[str]:
+    rows = store.rows(
+        "MATCH (d:Decision {kind: 'rule'}) WHERE d.status = 'open' AND d.author <> $actor "
+        "AND d.created_at >= $since RETURN d.text ORDER BY d.created_at DESC LIMIT $lim",
+        {"actor": actor, "since": now - RULE_WINDOW, "lim": limit},
+        read_only=True,
+    )
+    seen: List[str] = []
+    for (txt,) in rows:
+        if txt not in seen:
+            seen.append(txt)
+    return seen
+
+
 def briefing(store: Store, actor: str, now: Optional[float] = None,
              max_chars: int = BRIEFING_MAX_CHARS) -> str:
     """What a session should know when it starts. Empty string when there is nothing to say."""
@@ -171,17 +185,8 @@ def briefing(store: Store, actor: str, now: Optional[float] = None,
             parts.append("- %s: %s%s" % (str(task["owner"])[:13], clip_goal(task["goal"], 160),
                                          " (touching %s)" % ", ".join(paths) if paths else ""))
 
-    rules = store.rows(
-        "MATCH (d:Decision {kind: 'rule'}) WHERE d.status = 'open' AND d.author <> $actor "
-        "AND d.created_at >= $since RETURN d.text ORDER BY d.created_at DESC LIMIT 8",
-        {"actor": actor, "since": t - RULE_WINDOW},
-        read_only=True,
-    )
-    if rules:
-        seen: List[str] = []
-        for (txt,) in rules:
-            if txt not in seen:
-                seen.append(txt)
+    seen = recent_rules(store, actor, t)
+    if seen:
         parts.append("Rules and facts stated earlier by the user (not in the code):")
         parts.extend("- %s" % scrub(x, 240) for x in seen)
 

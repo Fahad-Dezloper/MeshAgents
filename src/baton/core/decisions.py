@@ -238,6 +238,9 @@ def describe_conflicts(result: Dict[str, object], now: Optional[float] = None) -
     now = time.time() if now is None else now
     lines: List[str] = []
     for d in list(result["decisions"])[:6]:  # type: ignore[union-attr]
+        if d.get("kind") == "rule":
+            lines.append("- rule stated earlier (about %s): %s" % (", ".join(d["paths"]), scrub(d["text"], 240)))
+            continue
         lines.append(
             "- %s decision by %s on %s: %s" % (d.get("kind", "note"), scrub(d["author"], 40), ", ".join(d["paths"]), scrub(d["text"], 240))
         )

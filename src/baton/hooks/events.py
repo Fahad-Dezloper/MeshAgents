@@ -10,6 +10,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from baton.capture import derive, symbols, transcript
@@ -135,17 +136,25 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
     actor = actor_from(payload)
     prompt = str(payload.get("prompt", ""))
     goal = sessions.set_goal(store, actor, prompt, now=now)
+    extra = ""
     try:
-        rules.record(store, actor, prompt, now=now)
+        rules.record(store, actor, prompt, now=now, project=project_dir_from(payload))
         if not goal:
             sessions.note_followup(store, actor, prompt)
+        else:
+            t = time.time() if now is None else now
+            shown = sessions.recent_rules(store, actor, t)  # already given at session start
+            rel = rules.relevant(store, actor, prompt, t, exclude=shown, since=t - sessions.RULE_WINDOW)
+            if rel:
+                extra = ("[baton] Rules stated earlier that look relevant to this request:\n"
+                         + "\n".join("- %s" % scrub(x, 240) for x in rel))
     except Exception:
         pass  # rule capture is an extra; never let it affect the session
     if not goal:
         return None
     dups = sessions.duplicate_sessions(store, actor, goal, now=now)
     if not dups:
-        return None
+        return context_output("UserPromptSubmit", extra) if extra else None
     names = ", ".join(sorted({str(d["owner"])[:8] for d in dups}))
     if sessions.designated_session(store, actor, dups):
         text = ("[baton] Another live session (%s) received this same request. You started first, so "
@@ -156,7 +165,7 @@ def on_prompt(store: Store, payload: Dict[str, Any], cfg: Config, now: Optional[
                 "is already doing it. Do NOT implement it a second time. Reply that session %s is "
                 "handling it and stop, unless the user explicitly asked for a separate attempt."
                 % (names, names))
-    return context_output("UserPromptSubmit", text)
+    return context_output("UserPromptSubmit", text + ("\n\n" + extra if extra else ""))
 
 
 def _local_modules(project: str) -> set:
