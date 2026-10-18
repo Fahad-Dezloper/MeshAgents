@@ -1,10 +1,10 @@
 /* One-line rename: change `name` (and, if you like, `cli` and `dir`). Everything on the page reads from here.
-   The repo URL is a PLACEHOLDER until the final one is decided. Empty video/blog links render as "coming soon". */
+   Empty video/blog links render as "coming soon". */
 window.CONFIG = {
   name: "MeshAgents",
   tagline: "A shared memory for AI coding helpers.",
-  repo: "https://github.com/Fahad-Dezloper/Baton", // PLACEHOLDER: the repo will be renamed; update this URL then
-  repoIsPlaceholder: true,
+  repo: "https://github.com/Fahad-Dezloper/MeshAgents",
+  repoIsPlaceholder: false,
   video: "",
   blog: "",
   heroCmd: "git clone {repo} {dir}",
