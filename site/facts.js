@@ -51,7 +51,7 @@ window.FACTS = {
     "search_mixed_pct": 65, "search_paraphrase_pct": 0
   },
   "codegraph": {"_src": "docs/RESULTS.md (code-graph round)", "trials": 40, "fired": 1},
-  "tests": {"_src": "automatic test suite (tests/), all passing", "count": 232},
+  "tests": {"_src": "automatic test suite (tests/), all passing", "count": 245},
   "research": {
     "_src": "[from the papers' abstracts] as summarised in docs/research/02-evidence-and-benchmarks.md; outside context, not our measurements",
     "year": 2026,

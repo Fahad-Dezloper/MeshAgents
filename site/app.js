@@ -26,14 +26,19 @@
     return { fmt: d.fmt || "num", dec: d.dec ? +d.dec : 0, prefix: d.prefix || "", suffix: d.suffix || "" };
   }
 
+  if (STATIC) document.documentElement.classList.add("static");
   if (STATIC) Array.prototype.forEach.call(document.querySelectorAll("details"), function (d) { d.open = true; });
+
+  /* marquee: duplicate the set once for a seamless loop */
+  var ms = $(".marq-set");
+  if (ms) { var cl = ms.cloneNode(true); cl.setAttribute("aria-hidden", "true"); ms.parentNode.appendChild(cl); if (reduce) cl.style.display = "none"; }
 
   /* ---------- config ---------- */
   var name = C.name || "this tool";
   document.title = name + ": " + (C.tagline || "");
   $$("[data-name]").forEach(function (e) { e.textContent = name; });
   $$("[data-tagline]").forEach(function (e) { e.textContent = C.tagline || ""; });
-  $$("a[data-repo]").forEach(function (a) { a.href = C.repo || "#"; a.textContent = a.classList.contains("small") ? "GitHub" : "Repo"; });
+  $$("a[data-repo]").forEach(function (a) { a.href = C.repo || "#"; });
   $$("[data-repo-note]").forEach(function (e) {
     e.textContent = C.repoIsPlaceholder ? "Repository link is a placeholder: " + C.repo : "";
   });
@@ -104,10 +109,11 @@
       row("No plugin", "", [{ v: cost.base_ratio, max: 1.5, text: x(cost.base_ratio) }])
     ]);
     var u = function (v) { return "$" + v.toFixed(4); }, mx = col.cost_clean_without;
-    fill("cost-clean", [
+    var mkClean = function () { return [
       row("Without", "", [{ v: col.cost_clean_without, max: mx, text: u(col.cost_clean_without) }]),
       row("With " + name, "", [{ v: col.cost_clean_with, max: mx, text: u(col.cost_clean_with), acc: true }])
-    ]);
+    ]; };
+    fill("cost-clean", mkClean()); fill("feat-cost", mkClean());
   }
   if (co) {
     var p = function (v) { return v.toFixed(1) + "%"; };
@@ -205,6 +211,24 @@
       if ("IntersectionObserver" in window && !reduce) io.observe(w); else w.classList.add("in");
     });
   }
+
+  /* ---------- hero command pill ---------- */
+  var hc = $("#hero-cmd");
+  if (hc) {
+    var hcmd = fillCmd(C.heroCmd || "git clone {repo} {dir}");
+    $("code", hc).textContent = hcmd;
+    var hb = $(".cp-btn", hc);
+    hb.addEventListener("click", function () {
+      var lab = $("span", hb);
+      copyText(hcmd, { set textContent(v) { lab.textContent = v; }, get textContent() { return lab.textContent; } });
+    });
+  }
+
+  /* ---------- results wall arrows ---------- */
+  var wall = $("#wall");
+  $$(".ar").forEach(function (b) {
+    b.addEventListener("click", function () { wall.scrollBy({ left: +b.dataset.dir * 360, behavior: reduce ? "auto" : "smooth" }); });
+  });
 
   /* ---------- theme ---------- */
   var tb = $("#theme");

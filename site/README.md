@@ -2,6 +2,9 @@
 
 Static page: no build step, no CDN, no external fonts or scripts. Works from `file://` and on any static host.
 
+## Layout
+Hero with a framed live-board window, a marquee of real proof numbers, four alternating feature sections, charts, a sideways "results wall" of real results, the ESTIMATE calculator, how it works, install steps, FAQ, the fine print, a closer and a footer. Dark by default; the theme toggle is in the footer.
+
 ## Preview
 Open `site/index.html` in a browser, or run `python3 -m http.server -d site 8000` and visit http://localhost:8000.
 Add `?static` to the URL to show everything at once (no scroll animations, details open), handy for screenshots.

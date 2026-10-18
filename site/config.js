@@ -7,6 +7,7 @@ window.CONFIG = {
   repoIsPlaceholder: true,
   video: "",
   blog: "",
+  heroCmd: "git clone {repo} {dir}",
   cli: "meshagents",
   dir: "meshagents",
   /* install commands, copied from the README; {repo} {cli} {dir} are filled in */
