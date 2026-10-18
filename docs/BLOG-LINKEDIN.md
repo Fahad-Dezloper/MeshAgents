@@ -23,11 +23,13 @@ Every question it answers is about connections. "Who holds a lease on this file?
 
 ## The numbers
 
-I tried hard not to fool myself, so I wrote the success criteria down *before* running the memory test.
+I wrote my success criteria down *before* the memory test, so I couldn't cheat.
 
-- **Fewer clashes:** In a fresh 180-run test, 72 of 90 runs finished clean with MeshAgents, against 48 of 90 without (80% vs 53%). The gap is real, with p below 0.001. On one test, three helpers adding features to the same code, it was 9 of 10 against 0 of 10.
-- **A smarter next session:** I told a first session a fact once, then started a second session that wasn't told. In 150 runs, the second session finished its job 95% of the time with MeshAgents, 92% with a hand-kept notes file, and 45% with no memory. In a harder test, it found one useful rule hidden among 20 irrelevant ones in 10 of 10 runs.
-- **Cost:** About the same per run (+6%), and each *clean* run cost 29% less, because fewer runs had to be redone.
+- **Fewer clashes:** **80%** of runs finished clean with MeshAgents, against **53%** without (180 runs).
+- **The hardest test**, three helpers on one codebase: **9 out of 10** finished clean, against **0 out of 10**.
+- **A smarter next session:** the second session finished its job **95%** of the time, against **45%** with no memory (150 runs). A hand-kept notes file got 92%.
+- **One rule hidden among 20:** found **10 out of 10** times.
+- **Cost:** about the same per run (+6%), and **29% cheaper** for every clean result.
 
 ## The mistake that taught me the most
 
