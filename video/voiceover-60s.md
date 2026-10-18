@@ -1,6 +1,6 @@
 # 60-second cut: voice-over cue sheet
 
-Video: `MeshAgents-60s.mp4` (58.5 s, no audio). Pace about 2.3 words per second. About 120 words in total.
+Video: `MeshAgents-60s.mp4` (58.5 s, no audio). Pace about 2.3 words per second. About 135 words in total.
 
 | Time | On screen | Say (simple words) |
 |---|---|---|
