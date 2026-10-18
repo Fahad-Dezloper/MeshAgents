@@ -7,7 +7,7 @@ When several Claude Code sessions work on one project, they cannot see each othe
 build on a function another session just changed, and a new session starts knowing nothing. MeshAgents is a shared
 notebook, kept as a graph in FalkorDB, that sessions read and write automatically (Claude Code hooks, no
 commands typed). It warns before clashes, remembers what each session changed and why, and hands notes to the
-next session. Repo: /Users/dezloper/Desktop/baton (GitHub Fahad-Dezloper/Baton, branch main).
+next session. Repo: <repo root> (GitHub Fahad-Dezloper/Baton, branch main).
 
 ## The competition we are in
 WeMakeDevs x FalkorDB "Graph Hacks", Track 2 (Agent Memory and Coordination). Deadline: Sun 2026-10-18, 11:59 PM
