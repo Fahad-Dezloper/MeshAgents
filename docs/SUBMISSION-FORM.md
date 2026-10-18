@@ -42,7 +42,6 @@ Real things we hit while building this:
 - `shortestPath` only works in `WITH` or `RETURN`, with both ends already matched. `MATCH p = shortestPath(...)` fails. A clearer error, or support in `MATCH`, would help.
 - `algo.louvain` and `algo.leiden` are not registered on v4.22.1, and it is hard to tell which algorithms exist in which server version. A per-version algorithm table in the docs would help.
 - Label propagation gave different communities between runs. A seed option, or a note in the docs, would help.
-- The docs examples for agent memory still show the old Graphiti API (`Graphiti(uri="falkor://...")`); current Graphiti uses `FalkorDriver`.
 - The Python client keeps cached schema ids. They go stale when a graph is deleted and recreated while a process is running (we hit this re-seeding a demo graph).
 - No multi-query transactions. A single query is atomic, so we kept anything that must be atomic in one query and made other writes safe to repeat.
 
