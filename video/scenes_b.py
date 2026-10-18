@@ -304,9 +304,9 @@ def scene_graph(c, t, T):
     title("Your helpers' notes live in a graph", 0.2, f2 + 0.2, WHITE, 64)
     title("Who is working on this file?", f2 + 0.3, f3 - 0.1)
     title("What breaks if I change this function?", f3 - 0.05, f4 - 0.1)
-    title("What was this note based on?", f4 - 0.05, f4 + 2.7)
-    title("A note was wrong? See everything built on it.", f4 + 2.8, f5 - 0.1, RED, 64)
-    k = e_out(prog(t, f5 + 0.0, 0.6))
+    title("What was this note based on?", f4 - 0.05, 999 if short else f4 + 2.7)
+    if not short: title("A note was wrong? See everything built on it.", f4 + 2.8, f5 - 0.1, RED, 64)
+    k = 0 if short else e_out(prog(t, f5 + 0.0, 0.6))
     if short:
         kt = e_out(prog(t, 0.4, 0.4))
         with c.push(1, 0, 0, kt):
