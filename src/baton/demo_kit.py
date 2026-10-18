@@ -26,9 +26,9 @@ from typing import Any, Dict, List, Optional
 MARKER = ".meshagents-demo"
 PROMPTS = (
     "In shop/db.py change get_order so it also needs a tenant name. "
-    "Rule for this project: never use sqlite, the server filesystem is read-only.",
+    "Rule: never use sqlite in this project, it does not work on our server.",
     "Add a function fetch_order_for(order_id, tenant) in shop/api.py that uses get_order.",
-    "Make orders survive a restart.",
+    "Make orders survive a restart. Keep it simple.",
 )
 
 
