@@ -44,7 +44,7 @@ def empty_state(workspace: str, now: float, error: str = "") -> dict:
         "workspace": workspace, "now": now, "connected": not error, "error": error,
         "counts": {"live_sessions": 0, "sessions": 0, "open_decisions": 0, "tainted": 0,
                    "retracted": 0, "handoffs": 0, "collisions": 0},
-        "sessions": [], "files": [], "decisions": [], "findings": [],
+        "sessions": [], "files": [], "decisions": [], "findings": [], "handoffs": [],
         "graph": {"nodes": [], "edges": [], "truncated": False},
     }
 
@@ -67,6 +67,9 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
             "MATCH (f:Finding) RETURN f ORDER BY f.created_at DESC LIMIT %d" % MAX_FINDINGS,
             read_only=True)
         hnd = store.rows("MATCH (h:Handoff) RETURN count(h)", read_only=True)
+        ho_rows = store.rows(
+            "MATCH (h:Handoff) RETURN h.id, h.created_by, h.created_at, h.note, h.summary "
+            "ORDER BY h.created_at DESC LIMIT 20", read_only=True)
         dep_rows = store.rows(
             "MATCH (a:Task)-[:DEPENDS_ON]->(b:Task) RETURN a.id, b.id", read_only=True)
     except Exception as e:  # DB down, graph missing, timeout
@@ -137,6 +140,8 @@ def build_state(store: Store, now: Optional[float] = None) -> dict:
     }
     return {"workspace": ws, "now": now, "connected": True, "error": "", "counts": counts,
             "sessions": sessions, "files": files, "decisions": decisions, "findings": findings,
+            "handoffs": [{"id": _s(r[0], 80), "created_by": _s(r[1], 80), "created_at": _f(r[2]) or None,
+                          "note": _s(r[3], 600), "summary": _s(r[4], 2500)} for r in ho_rows],
             "graph": _graph(sessions, decisions, findings, dep_rows)}
 
 
